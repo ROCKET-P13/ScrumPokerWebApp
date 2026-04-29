@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRootRoute, createRoute, createRouter, Navigate, Outlet, RouterProvider } from '@tanstack/react-router';
 
 import { Routes } from '@/Common/Routes';
-import { JoinRoomPage } from '@/Pages/JoinRoomPage';
+import { JoinRoomPage } from '@/Components/Pages/JoinRoomPage';
 
 const queryClient = new QueryClient();
 
