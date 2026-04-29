@@ -45,14 +45,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 		};
 
 		return (
-			<div className="space-y-4">
+			<div className="flex flex-col space-y-2">
 				{
 					label && (
 						<label
 							htmlFor={id}
 							className={
 								mergeTailwindClasses(
-									'text-sm font-medium leading-none',
+									'text-sm font-medium leading-none pl-1',
 									'text-foreground',
 									error ? 'text-destructive' : ''
 								)
@@ -79,7 +79,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 					onChange={handleChange}
 					className={
 						mergeTailwindClasses(
-							'flex h-10 w-full rounded-md border px-3 py-2 mt-1 text-sm',
+							'flex h-10 w-full rounded-md border px-3 py-2 text-sm',
 							'bg-background text-foreground border-input',
 							'placeholder:text-muted-foreground',
 							'transition-colors',

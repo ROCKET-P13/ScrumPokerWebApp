@@ -10,7 +10,7 @@ export const LandingPage = () => {
 	return (
 		<div className='mx-auto flex min-h-svh max-w-md flex-col justify-center px-4 py-4'>
 			<Card>
-				<CardHeader className='mb-3'>
+				<CardHeader className='mb-3 px-6'>
 					<CardTitle className='text-center text-2xl'>Scrum Poker</CardTitle>
 					<CardDescription className='text-center text-sm'>
 						Join an existing session or start a new room for your team.
