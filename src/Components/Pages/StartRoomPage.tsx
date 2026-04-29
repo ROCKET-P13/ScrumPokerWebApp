@@ -2,38 +2,33 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@ui/Button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@ui/Card';
 import { Input } from '@ui/Input';
+import { useState } from 'react';
 
 import { Routes } from '@/Common/Routes';
-import { joinRoomStore } from '@/stores/joinRoomStore';
 
-export const JoinRoomPage = () => {
+export const StartRoomPage = () => {
 	const navigate = useNavigate();
-	const roomId = joinRoomStore((state) => state.roomId);
-	const name = joinRoomStore((state) => state.name);
-	const updateJoinData = joinRoomStore((state) => state.updateJoinData);
+	const [name, setName] = useState('');
 
 	return (
 		<div className='mx-auto flex min-h-svh max-w-md flex-col justify-center px-4 py-4'>
 			<Card>
 				<CardHeader className='mb-3'>
-					<CardTitle className='text-center text-2xl'>Scrum Poker</CardTitle>
-					<CardDescription className='text-center text-sm'>Join a room to estimate with your team.</CardDescription>
+					<CardTitle className='text-center text-2xl'>Start a room</CardTitle>
+					<CardDescription className='text-center text-sm'>
+						Create a session and share the room details with your team.
+					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<div className="flex flex-col gap-4">
-						<Input
-							label='Room ID'
-							placeholder='e.g. sprint-42'
-							value={roomId}
-							onChange={(e) => updateJoinData({ roomId: e.target.value })}
-						/>
+					<div className='flex flex-col gap-4'>
 						<Input
 							label='Name'
-							placeholder='Display Name'
+							placeholder='Display name'
 							value={name}
-							onChange={(e) => updateJoinData({ name: e.target.value })}
+							onChange={(e) => {
+								setName(e.target.value);
+							}}
 						/>
-
 					</div>
 				</CardContent>
 				<CardFooter className='justify-between'>
@@ -47,9 +42,11 @@ export const JoinRoomPage = () => {
 					</Button>
 					<Button
 						onClick={() => {
-							console.log({ name, roomId });
+							console.log({ name });
 						}}
-					>Join Room</Button>
+					>
+							Create room
+					</Button>
 				</CardFooter>
 			</Card>
 		</div>

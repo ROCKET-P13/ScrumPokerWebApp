@@ -1,8 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createRootRoute, createRoute, createRouter, Navigate, Outlet, RouterProvider } from '@tanstack/react-router';
+import { createRootRoute, createRoute, createRouter, Outlet, RouterProvider } from '@tanstack/react-router';
 
 import { Routes } from '@/Common/Routes';
 import { JoinRoomPage } from '@/Components/Pages/JoinRoomPage';
+import { LandingPage } from '@/Components/Pages/LandingPage';
+import { StartRoomPage } from '@/Components/Pages/StartRoomPage';
 
 const queryClient = new QueryClient();
 
@@ -12,8 +14,8 @@ const rootRoute = createRootRoute({
 
 const indexRoute = createRoute({
 	getParentRoute: () => rootRoute,
-	path: '/',
-	component: () => <Navigate to={Routes.JOIN_ROOM} />,
+	path: Routes.HOME,
+	component: LandingPage,
 });
 
 const joinRoomRoute = createRoute({
@@ -22,9 +24,16 @@ const joinRoomRoute = createRoute({
 	component: JoinRoomPage,
 });
 
+const startRoomRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: Routes.START_ROOM,
+	component: StartRoomPage,
+});
+
 const routeTree = rootRoute.addChildren([
 	indexRoute,
 	joinRoomRoute,
+	startRoomRoute,
 ]);
 
 const router = createRouter({

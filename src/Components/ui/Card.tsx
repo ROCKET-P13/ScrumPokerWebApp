@@ -138,7 +138,7 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
 			<div
 				ref={ref}
 				data-slot="card-footer"
-				className={mergeTailwindClasses('flex items-center border-border bg-muted/40 p-6 pt-4', className)}
+				className={mergeTailwindClasses('flex items-center border-border gap-4 p-6 pt-4', className)}
 				{...props}
 			/>
 		);

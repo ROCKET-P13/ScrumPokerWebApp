@@ -1,3 +1,5 @@
 export enum Routes {
-	JOIN_ROOM = '/joinroom'
+	HOME = '/',
+	JOIN_ROOM = '/joinroom',
+	START_ROOM = '/start',
 }
