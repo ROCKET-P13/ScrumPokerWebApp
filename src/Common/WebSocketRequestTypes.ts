@@ -1,0 +1,6 @@
+export enum WebSocketRequestTypes {
+	JOIN_ROOM = 'JOIN_ROOM',
+	SEND_VOTE = 'SEND_VOTE',
+	REVEAL_VOTES = 'REVEAL_VOTES',
+	RESET_ROUND = 'RESET_ROUND',
+}
