@@ -4,13 +4,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@ui/Input';
 
 import { Routes } from '@/Common/Routes';
+import { useJoinRoom } from '@/hooks/useJoinRoom';
 import { joinRoomStore } from '@/stores/joinRoomStore';
 
 export const JoinRoomPage = () => {
 	const navigate = useNavigate();
-	const roomId = joinRoomStore((state) => state.roomId);
+	const roomCode = joinRoomStore((state) => state.roomCode);
 	const name = joinRoomStore((state) => state.name);
 	const updateJoinData = joinRoomStore((state) => state.updateJoinData);
+
+	const { mutate: joinRoom } = useJoinRoom();
+
+	const handleSubmit = async () => {
+		joinRoom({
+			roomCode,
+			displayName: name,
+		});
+	};
 
 	return (
 		<div className='mx-auto flex min-h-svh max-w-md flex-col justify-center px-4 py-4'>
@@ -24,8 +34,8 @@ export const JoinRoomPage = () => {
 						<Input
 							label='Room ID'
 							placeholder='e.g. sprint-42'
-							value={roomId}
-							onChange={(e) => updateJoinData({ roomId: e.target.value })}
+							value={roomCode}
+							onChange={(e) => updateJoinData({ roomCode: e.target.value })}
 						/>
 						<Input
 							label='Name'
@@ -46,9 +56,7 @@ export const JoinRoomPage = () => {
 							Back
 					</Button>
 					<Button
-						onClick={() => {
-							console.log({ name, roomId });
-						}}
+						onClick={handleSubmit}
 					>Join Room</Button>
 				</CardFooter>
 			</Card>

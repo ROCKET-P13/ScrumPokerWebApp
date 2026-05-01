@@ -5,10 +5,17 @@ import { Input } from '@ui/Input';
 import { useState } from 'react';
 
 import { Routes } from '@/Common/Routes';
+import { useCreateRoom } from '@/hooks/useCreateRoom';
 
 export const StartRoomPage = () => {
 	const navigate = useNavigate();
 	const [name, setName] = useState('');
+
+	const { mutate: createRoom } = useCreateRoom();
+
+	const handleSubmit = () => {
+		createRoom(name);
+	};
 
 	return (
 		<div className='mx-auto flex min-h-svh max-w-md flex-col justify-center px-4 py-4'>
@@ -41,11 +48,9 @@ export const StartRoomPage = () => {
 							Back
 					</Button>
 					<Button
-						onClick={() => {
-							console.log({ name });
-						}}
+						onClick={handleSubmit}
 					>
-							Create room
+						Create room
 					</Button>
 				</CardFooter>
 			</Card>

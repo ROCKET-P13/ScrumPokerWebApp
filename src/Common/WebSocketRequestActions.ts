@@ -1,4 +1,4 @@
-export enum WebSocketRequestTypes {
+export enum WebSocketRequestActions {
 	CREATE_ROOM = 'CREATE_ROOM',
 	JOIN_ROOM = 'JOIN_ROOM',
 	SEND_VOTE = 'SEND_VOTE',

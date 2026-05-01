@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 interface JoinRoomParams {
-	roomId: string;
+	roomCode: string;
 	name: string;
 }
 
@@ -10,7 +10,7 @@ interface JoinRoomState extends JoinRoomParams {
 }
 
 export const joinRoomStore = create<JoinRoomState>((set, get) => ({
-	roomId: '',
+	roomCode: '',
 	name: '',
 	updateJoinData: (data) => {
 		set((state) => ({
