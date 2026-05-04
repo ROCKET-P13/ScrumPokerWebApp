@@ -1,9 +1,8 @@
-import { Button } from '@ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui/Card';
 import { useState } from 'react';
 
+import { VotingCard } from '@/Components/VotingCard';
 import { useSendVote } from '@/hooks/useSendVote';
-import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
 const DefaultVoteOptions = [
 	'0',
@@ -19,18 +18,7 @@ const DefaultVoteOptions = [
 	'☕',
 ];
 
-function voteCardClasses (isSelected: boolean): string {
-	let ring = '';
-	if (isSelected) {
-		ring = 'ring-2 ring-ring ring-offset-2 ring-offset-background';
-	}
-	return mergeTailwindClasses(
-		'aspect-square h-auto min-h-14 w-full p-0 text-lg font-semibold',
-		ring
-	);
-}
-
-export const VotingCards = () => {
+export const VotingCardList = () => {
 	const { mutateAsync: sendVote } = useSendVote();
 	const [vote, setVote] = useState('');
 
@@ -51,24 +39,14 @@ export const VotingCards = () => {
 					aria-label="Planning poker values"
 				>
 					{
-						DefaultVoteOptions.map((value) => {
-							const isSelected = vote === value;
-							return (
-								<Button
-									key={value}
-									type="button"
-									variant={isSelected ? 'default' : 'outline'}
-									size="lg"
-									className={voteCardClasses(isSelected)}
-									onClick={async () => {
-										await handleSelectVote(value);
-									}}
-									aria-pressed={isSelected}
-								>
-									{value}
-								</Button>
-							);
-						})
+						DefaultVoteOptions.map((value) => (
+							<VotingCard
+								key={value}
+								value={value}
+								isSelected={vote === value}
+								onClick={async () => await handleSelectVote(value)}
+							/>
+						))
 					}
 				</div>
 			</CardContent>

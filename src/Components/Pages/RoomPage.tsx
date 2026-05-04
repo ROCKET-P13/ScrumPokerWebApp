@@ -1,5 +1,5 @@
 import { ParticipantList } from '@/Components/ParticipantList';
-import { VotingCards } from '@/Components/VotingCards';
+import { VotingCardList } from '@/Components/VotingCardList';
 import { roomStore } from '@/stores/roomStore';
 
 export const RoomPage = () => {
@@ -33,7 +33,7 @@ export const RoomPage = () => {
 					participants={participants}
 					isRevealed={room.isRevealed}
 				/>
-				<VotingCards />
+				<VotingCardList />
 			</div>
 		</div>
 	);
