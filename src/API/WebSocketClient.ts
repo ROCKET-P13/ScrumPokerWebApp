@@ -1,15 +1,31 @@
 type Handler = (data: object) => void;
 
+type PendingResolver = {
+  resolve: (data: {
+    success: boolean;
+    payload: unknown;
+    error?: unknown;
+  }) => void;
+  reject: (err: unknown) => void;
+  timeout: number;
+};
+
 export class WebSocketClient {
 	private socket: WebSocket | null = null;
 	private handlers: Handler[] = [];
 	private queue: string[] = [];
+	private pending = new Map<string, PendingResolver>();
+
+	private reconnectTimeout: number | null = null;
+
 	#WS_URL = import.meta.env.VITE_WS_URL;
 
-	private pending = new Map<string, (data: { success: boolean, payload: object, error: object }) => void>();
-
 	connect () {
-		if (this.socket) {
+		if (
+			this.socket
+      && (this.socket.readyState === WebSocket.OPEN
+        || this.socket.readyState === WebSocket.CONNECTING)
+		) {
 			return;
 		}
 
@@ -18,6 +34,7 @@ export class WebSocketClient {
 		this.socket.onopen = () => {
 			console.log('connected');
 
+			// flush queued messages
 			this.queue.forEach((msg) => this.socket?.send(msg));
 			this.queue = [];
 		};
@@ -26,10 +43,10 @@ export class WebSocketClient {
 			const data = JSON.parse(event.data);
 
 			if (data.type === 'response' && data.requestId) {
-				const resolver = this.pending.get(data.requestId);
+				const pending = this.pending.get(data.requestId);
 
-				if (resolver) {
-					resolver(data);
+				if (pending) {
+					pending.resolve(data);
 					this.pending.delete(data.requestId);
 					return;
 				}
@@ -41,7 +58,24 @@ export class WebSocketClient {
 		this.socket.onclose = () => {
 			console.log('disconnected');
 			this.socket = null;
+
+			this.scheduleReconnect();
 		};
+
+		this.socket.onerror = () => {
+			console.log('socket error');
+			this.socket?.close();
+		};
+	}
+
+	private scheduleReconnect () {
+		if (this.reconnectTimeout) return;
+
+		this.reconnectTimeout = window.setTimeout(() => {
+			console.log('reconnecting...');
+			this.reconnectTimeout = null;
+			this.connect();
+		}, 1000);
 	}
 
 	private sendRaw (payload: object) {
@@ -55,22 +89,33 @@ export class WebSocketClient {
 		this.socket.send(msg);
 	}
 
-	send (action: string, payload?: object): Promise<object> {
+	send<T = unknown> (action: string, payload?: object): Promise<T> {
 		const requestId = crypto.randomUUID();
 
-		return new Promise((resolve, reject) => {
-			this.pending.set(requestId, (response) => {
-				if (response.success) {
-					resolve(response.payload);
-				} else {
-					reject(response.error);
-				}
+		return new Promise<T>((resolve, reject) => {
+			const timeout = window.setTimeout(() => {
+				this.pending.delete(requestId);
+				reject(new Error('Request timeout'));
+			}, 10000);
+
+			this.pending.set(requestId, {
+				resolve: (response) => {
+					clearTimeout(timeout);
+
+					if (response.success) {
+						resolve(response.payload as T);
+					} else {
+						reject(response.error ?? new Error('Request failed'));
+					}
+				},
+				reject,
+				timeout,
 			});
 
 			this.sendRaw({
+				type: 'command',
 				action,
 				requestId,
-				type: 'command',
 				payload,
 			});
 		});
@@ -82,5 +127,17 @@ export class WebSocketClient {
 		return () => {
 			this.handlers = this.handlers.filter((h) => h !== handler);
 		};
+	}
+
+	disconnect () {
+		this.socket?.close();
+		this.socket = null;
+
+		this.pending.forEach((p) => {
+			clearTimeout(p.timeout);
+			p.reject(new Error('Socket disconnected'));
+		});
+
+		this.pending.clear();
 	}
 }

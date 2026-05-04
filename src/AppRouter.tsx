@@ -4,6 +4,7 @@ import { createRootRoute, createRoute, createRouter, Outlet, RouterProvider } fr
 import { Routes } from '@/Common/Routes';
 import { JoinRoomPage } from '@/Components/Pages/JoinRoomPage';
 import { LandingPage } from '@/Components/Pages/LandingPage';
+import { RoomPage } from '@/Components/Pages/RoomPage';
 import { StartRoomPage } from '@/Components/Pages/StartRoomPage';
 
 const queryClient = new QueryClient();
@@ -30,10 +31,17 @@ const startRoomRoute = createRoute({
 	component: StartRoomPage,
 });
 
+const roomRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: `${Routes.ROOM}/$roomCode`,
+	component: RoomPage,
+});
+
 const routeTree = rootRoute.addChildren([
 	indexRoute,
 	joinRoomRoute,
 	startRoomRoute,
+	roomRoute,
 ]);
 
 const router = createRouter({

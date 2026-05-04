@@ -4,6 +4,6 @@ import { roomAPI } from '@/API/RoomAPI';
 
 export const useCreateRoom = () => {
 	return useMutation({
-		mutationFn: async (displayName: string) => await roomAPI.create({ displayName }),
+		mutationFn: ({ displayName }: { displayName: string }) => roomAPI.create({ displayName }),
 	});
 };

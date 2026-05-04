@@ -16,10 +16,11 @@ export const JoinRoomPage = () => {
 	const { mutate: joinRoom } = useJoinRoom();
 
 	const handleSubmit = async () => {
-		joinRoom({
+		const res = joinRoom({
 			roomCode,
 			displayName: name,
 		});
+		console.log(res);
 	};
 
 	return (

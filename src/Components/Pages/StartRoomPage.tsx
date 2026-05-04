@@ -6,15 +6,23 @@ import { useState } from 'react';
 
 import { Routes } from '@/Common/Routes';
 import { useCreateRoom } from '@/hooks/useCreateRoom';
+import { roomStore } from '@/stores/roomStore';
 
 export const StartRoomPage = () => {
 	const navigate = useNavigate();
 	const [name, setName] = useState('');
 
-	const { mutate: createRoom } = useCreateRoom();
+	const setRoom = roomStore((state) => state.setRoom);
 
-	const handleSubmit = () => {
-		createRoom(name);
+	const { mutateAsync: createRoom } = useCreateRoom();
+
+	const handleSubmit = async () => {
+		const res = await createRoom({ displayName: name });
+		setRoom(res);
+		navigate({
+			to: `${Routes.ROOM}/$roomCode`,
+			params: { roomCode: res.roomCode },
+		});
 	};
 
 	return (

@@ -1,4 +1,5 @@
 import { WebSocketClient } from '@/API/WebSocketClient';
+import { Room } from '@/types/Room';
 
 interface RoomAPIConstructorParams {
 	webSocketClient?: WebSocketClient
@@ -21,23 +22,12 @@ class RoomAPI {
 		this.#webSocketClient.connect();
 	}
 
-	async create ({ displayName }: CreateRoomParams) {
-		this.#webSocketClient.subscribe((message) => {
-			console.log('create room message', message);
-		});
-
-		const res = await this.#webSocketClient.send('CREATE_ROOM', { displayName });
-
-		return res;
+	async create ({ displayName }: CreateRoomParams): Promise<Room> {
+		return await this.#webSocketClient.send('CREATE_ROOM', { displayName });
 	}
 
 	async join ({ roomCode, displayName }: JoinRoomParams) {
-		this.#webSocketClient.subscribe((message) => {
-			console.log('join room message', message);
-		});
-
-		const res = await this.#webSocketClient.send('JOIN_ROOM', { roomCode, displayName });
-		return res;
+		return await this.#webSocketClient.send('JOIN_ROOM', { roomCode, displayName });
 	}
 }
 
