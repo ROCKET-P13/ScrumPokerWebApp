@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { roomAPI } from '@/API/RoomAPI';
+import { Routes } from '@/Common/Routes';
 import { useJoinRoom } from '@/hooks/useJoinRoom';
 import { roomStore } from '@/stores/roomStore';
 
@@ -28,6 +29,10 @@ export const useAppBootstrap = () => {
 
 	useEffect(() => {
 		if (!roomCode || !displayName) {
+			return;
+		}
+
+		if (window.location.pathname !== `${Routes.ROOM}/${roomStore.getState().session.roomCode}`) {
 			return;
 		}
 
