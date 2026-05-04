@@ -6,7 +6,6 @@ import { useSendVote } from '@/hooks/useSendVote';
 
 const DefaultVoteOptions = [
 	'0',
-	'½',
 	'1',
 	'2',
 	'3',
@@ -26,6 +25,7 @@ export const VotingCardList = () => {
 		setVote(value);
 		await sendVote({ vote: value });
 	};
+
 	return (
 		<Card className="h-full">
 			<CardHeader className="px-6">
