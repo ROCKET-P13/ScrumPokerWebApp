@@ -1,30 +1,67 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-import { Participant } from '@/types/Participant';
+import { Room } from '@/types/Room';
 
-interface Room {
-	roomCode: string;
-	isRevealed: boolean;
-	participants: Participant[]
+type RoomStoreSession = {
+	roomCode: string | null;
+	displayName: string | null;
+	isRoomAdmin: boolean;
 }
 
-interface RoomStoreState {
-	room: Room;
-	selfVote: string;
-	setRoom: (data: Room) => void;
+export interface RoomStoreState {
+	session: RoomStoreSession;
+	room: Room | null;
+	setSession: (data: RoomStoreSession) => void;
+	setRoomState: (room: Room) => void;
+	clearSession: () => void;
 }
 
-export const roomStore = create<RoomStoreState>((set, get) => ({
-	room: {
-		roomCode: '',
-		isRevealed: false,
-		participants: [],
-	},
-	selfVote: '',
-	setRoom: (data: Room) => {
-		set((state) => ({
-			...state,
-			room: data,
-		}));
-	},
-}));
+export const roomStore = create<RoomStoreState>()(
+	persist(
+		(set) => ({
+			session: {
+				roomCode: null,
+				displayName: null,
+				isRoomAdmin: false,
+			},
+
+			room: null,
+
+			setSession: (data: RoomStoreSession) => {
+				set({
+					session: {
+						roomCode: data.roomCode,
+						displayName: data.displayName,
+						isRoomAdmin: data.isRoomAdmin,
+					},
+				});
+			},
+
+			setRoomState: (room: Room) => {
+				set({
+					room: room,
+				});
+			},
+
+			clearSession: () => {
+				set({
+					session: {
+						roomCode: null,
+						displayName: null,
+						isRoomAdmin: false,
+					},
+					room: null,
+				});
+			},
+
+		}),
+		{
+			name: 'scrum-poker-session',
+			partialize: (state) => ({
+				session: state.session,
+				room: state.room,
+			}),
+		}
+	)
+);

@@ -1,17 +1,14 @@
 import { create } from 'zustand';
 
-interface JoinRoomParams {
+interface JoinRoomState  {
 	roomCode: string;
-	name: string;
+	displayName: string;
+	updateJoinData: (data: { roomCode?: string; displayName?: string; }) => void;
 }
 
-interface JoinRoomState extends JoinRoomParams {
-	updateJoinData: (data: Partial<JoinRoomParams>) => void;
-}
-
-export const joinRoomStore = create<JoinRoomState>((set, get) => ({
+export const joinRoomStore = create<JoinRoomState>((set) => ({
 	roomCode: '',
-	name: '',
+	displayName: '',
 	updateJoinData: (data) => {
 		set((state) => ({
 			...state,

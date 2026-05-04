@@ -6,21 +6,36 @@ import { Input } from '@ui/Input';
 import { Routes } from '@/Common/Routes';
 import { useJoinRoom } from '@/hooks/useJoinRoom';
 import { joinRoomStore } from '@/stores/joinRoomStore';
+import { roomStore } from '@/stores/roomStore';
 
 export const JoinRoomPage = () => {
 	const navigate = useNavigate();
 	const roomCode = joinRoomStore((state) => state.roomCode);
-	const name = joinRoomStore((state) => state.name);
+	const name = joinRoomStore((state) => state.displayName);
 	const updateJoinData = joinRoomStore((state) => state.updateJoinData);
 
-	const { mutate: joinRoom } = useJoinRoom();
+	const setSession = roomStore((state) => state.setSession);
+	const setRoomState = roomStore((state) => state.setRoomState);
+
+	const { mutateAsync: joinRoom } = useJoinRoom();
 
 	const handleSubmit = async () => {
-		const res = joinRoom({
+		const room = await joinRoom({
 			roomCode,
 			displayName: name,
+			isRoomAdmin: false,
 		});
-		console.log(res);
+		setSession({
+			roomCode,
+			displayName: name,
+			isRoomAdmin: false,
+		});
+
+		setRoomState(room);
+		navigate({
+			to: `${Routes.ROOM}/$roomCode`,
+			params: { roomCode },
+		});
 	};
 
 	return (
@@ -35,14 +50,14 @@ export const JoinRoomPage = () => {
 						<Input
 							label='Room ID'
 							placeholder='e.g. sprint-42'
-							value={roomCode}
+							value={roomCode || ''}
 							onChange={(e) => updateJoinData({ roomCode: e.target.value })}
 						/>
 						<Input
 							label='Name'
 							placeholder='Display Name'
 							value={name}
-							onChange={(e) => updateJoinData({ name: e.target.value })}
+							onChange={(e) => updateJoinData({ displayName: e.target.value })}
 						/>
 
 					</div>

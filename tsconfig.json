@@ -23,7 +23,7 @@
   
 	  "baseUrl": ".",
 	  "paths": {
-		"@ui/*": ["src/Components/ui/*"],
+		"@ui/*": ["src/ui/*"],
 		"@/*": ["src/*"]
 	  },
 	  "types": ["vite/client", "node"]

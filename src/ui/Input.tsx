@@ -13,6 +13,27 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 	alphanumeric?: boolean;
 }
 
+function labelTextClass (hasError: boolean): string {
+	if (hasError) {
+		return mergeTailwindClasses(
+			'text-sm font-medium leading-none pl-1',
+			'text-foreground',
+			'text-destructive'
+		);
+	}
+	return mergeTailwindClasses(
+		'text-sm font-medium leading-none pl-1',
+		'text-foreground'
+	);
+}
+
+function inputBorderClass (hasError: boolean): string {
+	if (hasError) {
+		return 'border-destructive focus-visible:ring-destructive';
+	}
+	return '';
+}
+
 export const Input = forwardRef<HTMLInputElement, InputProps>(
 	(
 		{
@@ -44,19 +65,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 			onChange?.(e);
 		};
 
+		const hasError = Boolean(error);
+
 		return (
 			<div className="flex flex-col space-y-2">
 				{
 					label && (
 						<label
 							htmlFor={id}
-							className={
-								mergeTailwindClasses(
-									'text-sm font-medium leading-none pl-1',
-									'text-foreground',
-									error ? 'text-destructive' : ''
-								)
-							}
+							className={labelTextClass(hasError)}
 						>
 							{label}
 							{
@@ -90,7 +107,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 							'focus-visible:ring-offset-background',
 							'disabled:cursor-not-allowed disabled:opacity-50',
 							'file:border-0 file:bg-transparent file:text-sm file:font-medium',
-							error ? 'border-destructive focus-visible:ring-destructive' : '',
+							inputBorderClass(hasError),
 							className
 						)
 					}

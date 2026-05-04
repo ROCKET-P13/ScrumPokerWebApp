@@ -1,4 +1,6 @@
-type Handler = (data: object) => void;
+import { RoomStateMessage } from '@/types/RoomStateMessage';
+
+type Handler = (data: RoomStateMessage) => void;
 
 type PendingResolver = {
   resolve: (data: {

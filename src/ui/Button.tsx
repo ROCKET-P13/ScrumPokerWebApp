@@ -62,6 +62,13 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	size?: Size,
 }
 
+function disabledClass (disabled: boolean): string {
+	if (disabled) {
+		return 'opacity-50 cursor-not-allowed hover:opacity-50 hover:bg-none';
+	}
+	return '';
+}
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 	(
 		{
@@ -83,9 +90,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 						baseStyles,
 						Variants[variant],
 						Sizes[size],
-						disabled
-							? 'opacity-50 cursor-not-allowed hover:opacity-50 hover:bg-none'
-							: '',
+						disabledClass(disabled),
 						className
 					)
 				}

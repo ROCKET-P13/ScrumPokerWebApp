@@ -6,11 +6,17 @@ import { JoinRoomPage } from '@/Components/Pages/JoinRoomPage';
 import { LandingPage } from '@/Components/Pages/LandingPage';
 import { RoomPage } from '@/Components/Pages/RoomPage';
 import { StartRoomPage } from '@/Components/Pages/StartRoomPage';
+import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 
 const queryClient = new QueryClient();
 
+const Root = () => {
+	useAppBootstrap();
+	return <Outlet />;
+};
+
 const rootRoute = createRootRoute({
-	component: () => <Outlet />,
+	component: () => <Root />,
 });
 
 const indexRoute = createRoute({

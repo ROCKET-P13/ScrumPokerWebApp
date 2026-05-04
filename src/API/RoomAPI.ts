@@ -1,5 +1,7 @@
 import { WebSocketClient } from '@/API/WebSocketClient';
+import { WebSocketRequestActions } from '@/Common/WebSocketRequestActions';
 import { Room } from '@/types/Room';
+import { RoomStateMessage } from '@/types/RoomStateMessage';
 
 interface RoomAPIConstructorParams {
 	webSocketClient?: WebSocketClient
@@ -12,6 +14,7 @@ interface CreateRoomParams {
 export interface JoinRoomParams {
 	roomCode: string;
 	displayName: string;
+	isRoomAdmin: boolean
 }
 
 class RoomAPI {
@@ -23,11 +26,24 @@ class RoomAPI {
 	}
 
 	async create ({ displayName }: CreateRoomParams): Promise<Room> {
-		return await this.#webSocketClient.send('CREATE_ROOM', { displayName });
+		return await this.#webSocketClient.send(WebSocketRequestActions.CREATE_ROOM, { displayName });
 	}
 
-	async join ({ roomCode, displayName }: JoinRoomParams) {
-		return await this.#webSocketClient.send('JOIN_ROOM', { roomCode, displayName });
+	async join ({ roomCode, displayName, isRoomAdmin }: JoinRoomParams): Promise<Room> {
+		return await this.#webSocketClient.send(WebSocketRequestActions.JOIN_ROOM, { roomCode, displayName, isRoomAdmin });
+	}
+
+	async sendVote ({ vote }: { vote: string }): Promise<Room> {
+		return await this.#webSocketClient.send(WebSocketRequestActions.SEND_VOTE, { value: vote });
+	}
+
+	subscribe (listener: (room: Room) => void): () => void {
+		return this.#webSocketClient.subscribe((data: RoomStateMessage) => {
+			if (data.event !== 'ROOM_STATE') {
+				return;
+			}
+			listener(data.payload);
+		});
 	}
 }
 

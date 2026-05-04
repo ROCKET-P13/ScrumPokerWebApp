@@ -12,13 +12,19 @@ export const StartRoomPage = () => {
 	const navigate = useNavigate();
 	const [name, setName] = useState('');
 
-	const setRoom = roomStore((state) => state.setRoom);
+	const setSession = roomStore((state) => state.setSession);
+	const setRoomState = roomStore((state) => state.setRoomState);
 
 	const { mutateAsync: createRoom } = useCreateRoom();
 
 	const handleSubmit = async () => {
 		const res = await createRoom({ displayName: name });
-		setRoom(res);
+		setSession({
+			roomCode: res.roomCode,
+			displayName: name,
+			isRoomAdmin: true,
+		});
+		setRoomState(res);
 		navigate({
 			to: `${Routes.ROOM}/$roomCode`,
 			params: { roomCode: res.roomCode },

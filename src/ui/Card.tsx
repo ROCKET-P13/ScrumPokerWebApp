@@ -96,7 +96,7 @@ const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLPara
 			<p
 				ref={ref}
 				data-slot="card-description"
-				className={mergeTailwindClasses('text-sm text-[rbg(var(--muted-foreground))]', className)}
+				className={mergeTailwindClasses('text-sm text-muted-foreground', className)}
 				{...props}
 			/>
 		);
