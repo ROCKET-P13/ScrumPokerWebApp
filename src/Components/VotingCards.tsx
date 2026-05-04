@@ -1,9 +1,11 @@
 import { Button } from '@ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui/Card';
+import { useState } from 'react';
 
+import { useSendVote } from '@/hooks/useSendVote';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
-export const DEFAULT_VOTE_VALUES = [
+const DefaultVoteOptions = [
 	'0',
 	'½',
 	'1',
@@ -15,15 +17,7 @@ export const DEFAULT_VOTE_VALUES = [
 	'21',
 	'?',
 	'☕',
-] as const;
-
-type VotingCardsProps = {
-	values?: readonly string[];
-	selectedValue: string | null;
-	onSelect: (value: string) => void;
-	disabled?: boolean;
-	isSubmitting?: boolean;
-};
+];
 
 function voteCardClasses (isSelected: boolean): string {
 	let ring = '';
@@ -36,22 +30,14 @@ function voteCardClasses (isSelected: boolean): string {
 	);
 }
 
-function voteCardVariant (isSelected: boolean): 'default' | 'outline' {
-	if (isSelected) {
-		return 'default';
-	}
-	return 'outline';
-}
+export const VotingCards = () => {
+	const { mutateAsync: sendVote } = useSendVote();
+	const [vote, setVote] = useState('');
 
-export const VotingCards = ({
-	values = DEFAULT_VOTE_VALUES,
-	selectedValue,
-	onSelect,
-	disabled = false,
-	isSubmitting = false,
-}: VotingCardsProps) => {
-	const busy = disabled || isSubmitting;
-
+	const handleSelectVote = async (value: string) => {
+		setVote(value);
+		await sendVote({ vote: value });
+	};
 	return (
 		<Card className="h-full">
 			<CardHeader className="px-6">
@@ -64,24 +50,26 @@ export const VotingCards = ({
 					role="group"
 					aria-label="Planning poker values"
 				>
-					{values.map((value) => {
-						const isSelected = selectedValue === value;
-
-						return (
-							<Button
-								key={value}
-								type="button"
-								variant={voteCardVariant(isSelected)}
-								size="lg"
-								disabled={busy}
-								className={voteCardClasses(isSelected)}
-								onClick={() => onSelect(value)}
-								aria-pressed={isSelected}
-							>
-								{value}
-							</Button>
-						);
-					})}
+					{
+						DefaultVoteOptions.map((value) => {
+							const isSelected = vote === value;
+							return (
+								<Button
+									key={value}
+									type="button"
+									variant={isSelected ? 'default' : 'outline'}
+									size="lg"
+									className={voteCardClasses(isSelected)}
+									onClick={async () => {
+										await handleSelectVote(value);
+									}}
+									aria-pressed={isSelected}
+								>
+									{value}
+								</Button>
+							);
+						})
+					}
 				</div>
 			</CardContent>
 		</Card>

@@ -29,6 +29,7 @@ export const JoinRoomPage = () => {
 			roomCode,
 			displayName: name,
 			isRoomAdmin: false,
+			vote: '',
 		});
 
 		setRoomState(room);

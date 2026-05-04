@@ -23,6 +23,7 @@ export const StartRoomPage = () => {
 			roomCode: res.roomCode,
 			displayName: name,
 			isRoomAdmin: true,
+			vote: '',
 		});
 		setRoomState(res);
 		navigate({
