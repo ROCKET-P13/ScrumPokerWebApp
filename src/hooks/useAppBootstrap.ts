@@ -32,7 +32,7 @@ export const useAppBootstrap = () => {
 			return;
 		}
 
-		if (window.location.pathname !== `${Routes.ROOM}/${roomStore.getState().session.roomCode}`) {
+		if (window.location.pathname !== `${Routes.ROOM}/${roomCode}`) {
 			return;
 		}
 
