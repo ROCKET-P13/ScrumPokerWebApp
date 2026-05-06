@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui/Card';
+import _ from 'lodash';
 
 import { Participant } from '@/types/Participant';
 
@@ -28,14 +29,14 @@ export const ParticipantList = (
 			<CardContent className="px-6">
 				<ul className="divide-y divide-border rounded-lg border border-border bg-background/50">
 					{
-						participants.map((participant, index) => {
+						_.map(participants, (participant, index) => {
 							return (
 								<li
 									key={`${participant.displayName}-${index}`}
 									className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
 								>
 									<div className="flex min-w-0 flex-1 items-center gap-2">
-										<span className="truncate font-medium text-foreground">{participant.displayName}</span>
+										<p className="truncate font-medium text-foreground">{participant.displayName}</p>
 										{
 											participant.isRoomAdmin && (
 												<span className="shrink-0 rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">

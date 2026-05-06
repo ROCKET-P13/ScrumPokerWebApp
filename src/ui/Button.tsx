@@ -16,9 +16,6 @@ const baseStyles : string = `
   duration-200
   ease-in-out
   focus:outline-none
-  focus:ring-2
-  focus:ring-ring
-  focus:ring-offset-2
   font-bold
   cursor-pointer
 `;

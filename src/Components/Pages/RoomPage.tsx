@@ -5,7 +5,6 @@ import { useMemo, useState } from 'react';
 
 import { DefaultVoteOptions } from '@/Common/DefaultVoteOptions';
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
-import { VotingCard } from '@/Components/Voting/VotingCard';
 import { useResetRound } from '@/hooks/useResetRound';
 import { useRevealVotes } from '@/hooks/useRevealVotes';
 import { useSendVote } from '@/hooks/useSendVote';
@@ -26,7 +25,6 @@ export const RoomPage = () => {
 		[room.isRevealed, room.participants]
 	);
 
-	const participants = room?.participants ?? [];
 	if (!session.roomCode || !session.displayName) {
 		return null;
 	}
@@ -54,16 +52,17 @@ export const RoomPage = () => {
 
 	return (
 		<div className="mx-auto min-h-svh max-w-5xl px-4 py-8">
-			<header className="mb-8 text-center">
+			<div className="mb-8 text-center flex flex-col items-center justify-center">
 				<h1 className="text-2xl font-semibold tracking-tight text-foreground">Scrum Poker</h1>
-				<p className="mt-1 text-sm text-muted-foreground">
-					Room <span className="font-mono font-medium text-foreground">{session.roomCode}</span>
-				</p>
-			</header>
+				<div className="mt-1 text-sm text-muted-foreground flex flex-row gap-1">
+					<p>Room</p>
+					<p className="font-mono font-medium text-foreground">{session.roomCode}</p>
+				</div>
+			</div>
 
 			<div className="gap-6 flex flex-col">
 				<ParticipantList
-					participants={participants}
+					participants={room.participants}
 					isRevealed={room.isRevealed}
 				/>
 
@@ -101,13 +100,16 @@ export const RoomPage = () => {
 						>
 							{
 								DefaultVoteOptions.map((value) => (
-									<VotingCard
+									<Button
 										key={value}
-										value={value}
-										isSelected={currentVote === value}
+										disabled={room.isRevealed}
+										variant={(currentVote === value) ? 'default' : 'outline'}
+										size="lg"
+										className='aspect-square h-auto min-h-14 w-full p-0 text-lg font-semibold'
 										onClick={() => selectVote(value)}
-										roomIsRevealed={room.isRevealed}
-									/>
+									>
+										{value}
+									</Button>
 								))
 							}
 						</div>
