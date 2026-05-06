@@ -5,22 +5,22 @@
 	  "module": "ESNext",
 	  "moduleResolution": "bundler",
 	  "jsx": "react-jsx",
-  
+
 	  "strict": true,
 	  "noImplicitAny": false,
 	  "strictNullChecks": true,
-  
+
 	  "esModuleInterop": true,
 	  "allowSyntheticDefaultImports": true,
-  
+
 	  "noEmit": true,
 	  "isolatedModules": true,
-  
+
 	  "allowJs": false,
 	  "checkJs": false,
-  
+
 	  "skipLibCheck": true,
-  
+
 	  "baseUrl": ".",
 	  "paths": {
 		"@ui/*": ["src/ui/*"],

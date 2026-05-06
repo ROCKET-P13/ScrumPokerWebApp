@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { ParticipantList } from '@/Components/ParticipantList';
 import { VotingCard } from '@/Components/VotingCard';
+import { useResetRound } from '@/hooks/useResetRound';
 import { useRevealVotes } from '@/hooks/useRevealVotes';
 import { useSendVote } from '@/hooks/useSendVote';
 import { roomStore } from '@/stores/roomStore';
@@ -25,8 +26,9 @@ export const RoomPage = () => {
 	const session = roomStore((s) => s.session);
 	const room = roomStore((s) => s.room);
 	const { mutateAsync: sendVote } = useSendVote();
-	const [vote, setVote] = useState('');
 	const { mutateAsync: revealVotes } = useRevealVotes();
+	const { mutateAsync: resetRound } = useResetRound();
+	const [vote, setVote] = useState('');
 
 	const participants = room?.participants ?? [];
 	if (!session.roomCode || !session.displayName) {
@@ -42,11 +44,12 @@ export const RoomPage = () => {
 	}
 
 	const handleSelectVote = async (value: string) => {
+		if (room.isRevealed) {
+			return '';
+		}
 		setVote(value);
 		await sendVote({ vote: value });
 	};
-
-	console.log({ room });
 
 	return (
 		<div className="mx-auto min-h-svh max-w-5xl px-4 py-8">
@@ -69,12 +72,25 @@ export const RoomPage = () => {
 							<CardTitle className="text-base">Your vote</CardTitle>
 							<CardDescription>Pick a card to submit your estimate for this round.</CardDescription>
 						</div>
-						<Button
-							disabled={room.isRevealed}
-							onClick={async () => await revealVotes()}
-						>
-							Reveal Votes
-						</Button>
+						{
+							session.isRoomAdmin && (
+								<div className='space-x-4'>
+									<Button
+										disabled={!room.isRevealed}
+										onClick={() => resetRound()}
+									>
+										Reset Round
+									</Button>
+									<Button
+										disabled={room.isRevealed}
+										onClick={() => revealVotes()}
+									>
+										Reveal Votes
+									</Button>
+								</div>
+							)
+						}
+
 					</CardHeader>
 					<CardContent className="px-6">
 						<div
@@ -88,7 +104,8 @@ export const RoomPage = () => {
 										key={value}
 										value={value}
 										isSelected={vote === value}
-										onClick={async () => await handleSelectVote(value)}
+										onClick={() => handleSelectVote(value)}
+										roomIsRevealed={room.isRevealed}
 									/>
 								))
 							}

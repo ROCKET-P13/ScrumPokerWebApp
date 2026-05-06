@@ -41,6 +41,10 @@ class RoomAPI {
 		return await this.#webSocketClient.send(WebSocketRequestActions.REVEAL_VOTES);
 	}
 
+	async resetRound (): Promise<Room> {
+		return await this.#webSocketClient.send(WebSocketRequestActions.RESET_ROUND);
+	}
+
 	subscribe (listener: (room: Room) => void): () => void {
 		return this.#webSocketClient.subscribe((data: RoomStateMessage) => {
 			if (data.event !== 'ROOM_STATE') {

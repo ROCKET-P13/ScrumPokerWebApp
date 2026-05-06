@@ -2,9 +2,10 @@ import { Button } from '@ui/Button';
 
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
-export const VotingCard = ({ value, isSelected, onClick }) => {
+export const VotingCard = ({ value, isSelected, onClick, roomIsRevealed }) => {
 	return (
 		<Button
+			disabled={roomIsRevealed}
 			variant={isSelected ? 'default' : 'outline'}
 			size="lg"
 			className={
