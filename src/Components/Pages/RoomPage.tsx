@@ -2,25 +2,13 @@ import { Button } from '@ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui/Card';
 import { useState } from 'react';
 
-import { ParticipantList } from '@/Components/ParticipantList';
-import { VotingCard } from '@/Components/VotingCard';
+import { DefaultVoteOptions } from '@/Common/DefaultVoteOptions';
+import { ParticipantList } from '@/Components/Participants/ParticipantList';
+import { VotingCard } from '@/Components/Voting/VotingCard';
 import { useResetRound } from '@/hooks/useResetRound';
 import { useRevealVotes } from '@/hooks/useRevealVotes';
 import { useSendVote } from '@/hooks/useSendVote';
 import { roomStore } from '@/stores/roomStore';
-
-const DefaultVoteOptions = [
-	'0',
-	'1',
-	'2',
-	'3',
-	'5',
-	'8',
-	'13',
-	'21',
-	'?',
-	'☕',
-];
 
 export const RoomPage = () => {
 	const session = roomStore((s) => s.session);
