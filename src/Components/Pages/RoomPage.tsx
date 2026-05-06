@@ -1,6 +1,7 @@
 import { Button } from '@ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui/Card';
-import { useState } from 'react';
+import _ from 'lodash';
+import { useMemo, useState } from 'react';
 
 import { DefaultVoteOptions } from '@/Common/DefaultVoteOptions';
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
@@ -17,6 +18,13 @@ export const RoomPage = () => {
 	const { mutateAsync: revealVotes } = useRevealVotes();
 	const { mutateAsync: resetRound } = useResetRound();
 	const [vote, setVote] = useState('');
+
+	const revealVotesButtonIsDisabled = useMemo(
+		() => {
+			return room.isRevealed || !_.every(room.participants, 'hasVoted');
+		},
+		[room.isRevealed, room.participants]
+	);
 
 	const participants = room?.participants ?? [];
 	if (!session.roomCode || !session.displayName) {
@@ -70,7 +78,7 @@ export const RoomPage = () => {
 										Reset Round
 									</Button>
 									<Button
-										disabled={room.isRevealed}
+										disabled={revealVotesButtonIsDisabled}
 										onClick={() => revealVotes()}
 									>
 										Reveal Votes

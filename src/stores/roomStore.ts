@@ -12,7 +12,7 @@ type RoomStoreSession = {
 
 export interface RoomStoreState {
 	session: RoomStoreSession;
-	room: Room | null;
+	room: Room;
 	setSession: (data: RoomStoreSession) => void;
 	setRoomState: (room: Room) => void;
 	clearSession: () => void;
@@ -28,7 +28,11 @@ export const roomStore = create<RoomStoreState>()(
 				vote: '',
 			},
 
-			room: null,
+			room: {
+				roomCode: '',
+				isRevealed: false,
+				participants: [],
+			},
 
 			setSession: (data: RoomStoreSession) => {
 				set({
@@ -55,7 +59,12 @@ export const roomStore = create<RoomStoreState>()(
 						isRoomAdmin: false,
 						vote: '',
 					},
-					room: null,
+
+					room: {
+						roomCode: '',
+						isRevealed: false,
+						participants: [],
+					},
 				});
 			},
 

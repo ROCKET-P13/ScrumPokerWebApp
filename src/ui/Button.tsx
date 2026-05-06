@@ -86,7 +86,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 						Variants[variant],
 						Sizes[size],
 						disabled
-							? 'opacity-50 cursor-not-allowed hover:opacity-50 hover:bg-none'
+							? 'bg-muted text-muted-foreground opacity-100 cursor-not-allowed pointer-events-none'
 							: '',
 						className
 					)
