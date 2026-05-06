@@ -17,7 +17,7 @@ export const RoomPage = () => {
 	const { mutateAsync: sendVote } = useSendVote();
 	const { mutateAsync: revealVotes } = useRevealVotes();
 	const { mutateAsync: resetRound } = useResetRound();
-	const [vote, setVote] = useState('');
+	const [currentVote, setCurrentVote] = useState('');
 
 	const revealVotesButtonIsDisabled = useMemo(
 		() => {
@@ -39,12 +39,17 @@ export const RoomPage = () => {
 		);
 	}
 
-	const handleSelectVote = async (value: string) => {
+	const selectVote = async (newVoteValue: string) => {
 		if (room.isRevealed) {
 			return '';
 		}
-		setVote(value);
-		await sendVote({ vote: value });
+
+		if (newVoteValue == currentVote) {
+			setCurrentVote('');
+			return await sendVote({ vote: '' });
+		}
+		setCurrentVote(newVoteValue);
+		await sendVote({ vote: newVoteValue });
 	};
 
 	return (
@@ -99,8 +104,8 @@ export const RoomPage = () => {
 									<VotingCard
 										key={value}
 										value={value}
-										isSelected={vote === value}
-										onClick={() => handleSelectVote(value)}
+										isSelected={currentVote === value}
+										onClick={() => selectVote(value)}
 										roomIsRevealed={room.isRevealed}
 									/>
 								))
