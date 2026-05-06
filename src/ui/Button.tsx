@@ -13,6 +13,8 @@ const baseStyles : string = `
   py-2
   rounded-[var(--radius)]
   transition-colors
+  duration-200
+  ease-in-out
   focus:outline-none
   focus:ring-2
   focus:ring-ring
@@ -25,12 +27,12 @@ const Variants = {
 	default: `
 		bg-primary
 		text-primary-foreground
-		hover:opacity-90
+		hover:bg-primary/90
   	`,
 	secondary: `
 		bg-secondary
 		text-secondary-foreground
-		hover:opacity-80
+		hover:bg-secondary/80
   	`,
 	outline: `
 		border border-border
@@ -43,7 +45,7 @@ const Variants = {
 	destructive: `
 		bg-destructive
 		text-destructive-foreground
-		hover:opacity-90
+		hover:bg-destructive/90
   	`,
 } as const;
 
@@ -60,13 +62,6 @@ type Size = keyof typeof Sizes
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	variant?: Variant,
 	size?: Size,
-}
-
-function disabledClass (disabled: boolean): string {
-	if (disabled) {
-		return 'opacity-50 cursor-not-allowed hover:opacity-50 hover:bg-none';
-	}
-	return '';
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -90,7 +85,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 						baseStyles,
 						Variants[variant],
 						Sizes[size],
-						disabledClass(disabled),
+						disabled
+							? 'opacity-50 cursor-not-allowed hover:opacity-50 hover:bg-none'
+							: '',
 						className
 					)
 				}
