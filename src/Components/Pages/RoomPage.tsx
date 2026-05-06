@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 
 import { DefaultVoteOptions } from '@/Common/DefaultVoteOptions';
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
+import { VotingCard } from '@/Components/Voting/VotingCard';
 import { useResetRound } from '@/hooks/useResetRound';
 import { useRevealVotes } from '@/hooks/useRevealVotes';
 import { useSendVote } from '@/hooks/useSendVote';
@@ -100,16 +101,13 @@ export const RoomPage = () => {
 						>
 							{
 								DefaultVoteOptions.map((value) => (
-									<Button
+									<VotingCard
 										key={value}
+										value={value}
 										disabled={room.isRevealed}
-										variant={(currentVote === value) ? 'default' : 'outline'}
-										size="lg"
-										className='aspect-square h-auto min-h-14 w-full p-0 text-lg font-semibold'
+										selected={currentVote === value}
 										onClick={() => selectVote(value)}
-									>
-										{value}
-									</Button>
+									/>
 								))
 							}
 						</div>
