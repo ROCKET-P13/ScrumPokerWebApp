@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
 import { VotingHand } from '@/Components/Voting/VotingHand';
@@ -9,8 +9,23 @@ export const RoomPage = () => {
 	const session = roomStore((s) => s.session);
 	const room = roomStore((s) => s.room);
 	const { mutateAsync: sendVote } = useSendVote();
-
 	const [currentVote, setCurrentVote] = useState('');
+
+	const selectVote = useCallback(
+		async (newVoteValue: string) => {
+			if (room?.isRevealed) {
+				return '';
+			}
+
+			if (newVoteValue == currentVote) {
+				setCurrentVote('');
+				return await sendVote({ vote: '' });
+			}
+			setCurrentVote(newVoteValue);
+			await sendVote({ vote: newVoteValue });
+		},
+		[room.isRevealed, currentVote, sendVote]
+	);
 
 	if (!session.roomCode || !session.displayName) {
 		return null;
@@ -23,19 +38,6 @@ export const RoomPage = () => {
 			</div>
 		);
 	}
-
-	const selectVote = async (newVoteValue: string) => {
-		if (room.isRevealed) {
-			return '';
-		}
-
-		if (newVoteValue == currentVote) {
-			setCurrentVote('');
-			return await sendVote({ vote: '' });
-		}
-		setCurrentVote(newVoteValue);
-		await sendVote({ vote: newVoteValue });
-	};
 
 	return (
 		<div className="relative min-h-svh">
@@ -57,7 +59,7 @@ export const RoomPage = () => {
 			<VotingHand
 				currentVote={currentVote}
 				disabled={room.isRevealed}
-				onSelect={(value) => selectVote(value)}
+				onSelect={selectVote}
 			/>
 		</div>
 	);

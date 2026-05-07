@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
 import { DefaultVoteOptions } from '@/Common/DefaultVoteOptions';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
@@ -12,14 +12,14 @@ interface VotingHandProps {
 	className?: string;
 };
 
-export const VotingHand = (
+export const VotingHand = memo(function VotingHand (
 	{
 		currentVote,
 		disabled,
 		onSelect,
 		className = '',
 	}: VotingHandProps
-) => {
+) {
 	const [hoverSuppressedIndex, setHoverSuppressedIndex] = useState<number | null>(null);
 
 	return (
@@ -65,7 +65,6 @@ export const VotingHand = (
 											'relative shrink-0 transition-all duration-300 ease-out',
 											liftOrHoverClass,
 											index !== 0 ? 'max-sm:-ml-6 -ml-8 sm:-ml-8' : ''
-											// index === 0 ? '' : mergeTailwindClasses(OVERLAP_SM, OVERLAP_DEFAULT)
 										)
 									}
 								>
@@ -90,4 +89,4 @@ export const VotingHand = (
 			</div>
 		</div>
 	);
-};
+});
