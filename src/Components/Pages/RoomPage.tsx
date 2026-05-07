@@ -1,13 +1,7 @@
-import { Button } from '@ui/Button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@ui/Card';
-import _ from 'lodash';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
-import { DefaultVoteOptions } from '@/Common/DefaultVoteOptions';
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
 import { VotingHand } from '@/Components/Voting/VotingHand';
-import { useResetRound } from '@/hooks/useResetRound';
-import { useRevealVotes } from '@/hooks/useRevealVotes';
 import { useSendVote } from '@/hooks/useSendVote';
 import { roomStore } from '@/stores/roomStore';
 
@@ -15,16 +9,8 @@ export const RoomPage = () => {
 	const session = roomStore((s) => s.session);
 	const room = roomStore((s) => s.room);
 	const { mutateAsync: sendVote } = useSendVote();
-	const { mutateAsync: revealVotes } = useRevealVotes();
-	const { mutateAsync: resetRound } = useResetRound();
-	const [currentVote, setCurrentVote] = useState('');
 
-	const revealVotesButtonIsDisabled = useMemo(
-		() => {
-			return room.isRevealed || !_.every(room.participants, 'hasVoted');
-		},
-		[room.isRevealed, room.participants]
-	);
+	const [currentVote, setCurrentVote] = useState('');
 
 	if (!session.roomCode || !session.displayName) {
 		return null;
@@ -62,45 +48,13 @@ export const RoomPage = () => {
 					</div>
 				</div>
 
-				<div className="flex flex-col gap-6">
-					<ParticipantList
-						participants={room.participants}
-						isRevealed={room.isRevealed}
-					/>
-
-					<Card className="h-full">
-						<CardHeader className="flex flex-row items-center justify-between px-6">
-							<div>
-								<CardTitle className="text-base">Your vote</CardTitle>
-								<CardDescription>Pick a card to submit your estimate for this round.</CardDescription>
-							</div>
-							{
-								session.isRoomAdmin && (
-									<div className="space-x-4">
-										<Button
-											disabled={!room.isRevealed}
-											onClick={() => resetRound()}
-										>
-											Reset Round
-										</Button>
-										<Button
-											disabled={revealVotesButtonIsDisabled}
-											onClick={() => revealVotes()}
-										>
-											Reveal Votes
-										</Button>
-									</div>
-								)
-							}
-
-						</CardHeader>
-					</Card>
-
-				</div>
+				<ParticipantList
+					participants={room.participants}
+					isRevealed={room.isRevealed}
+				/>
 
 			</div>
 			<VotingHand
-				values={DefaultVoteOptions}
 				currentVote={currentVote}
 				disabled={room.isRevealed}
 				onSelect={(value) => selectVote(value)}

@@ -1,23 +1,19 @@
 import { useState } from 'react';
 
+import { DefaultVoteOptions } from '@/Common/DefaultVoteOptions';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
 import { VotingCard } from './VotingCard';
 
 interface VotingHandProps {
-	values: readonly string[];
 	currentVote: string;
 	disabled: boolean;
 	onSelect: (value: string) => void;
 	className?: string;
 };
 
-const OVERLAP_SM = 'max-sm:-ml-6';
-const OVERLAP_DEFAULT = '-ml-8 sm:-ml-8';
-
 export const VotingHand = (
 	{
-		values,
 		currentVote,
 		disabled,
 		onSelect,
@@ -38,23 +34,15 @@ export const VotingHand = (
 			}
 		>
 			<div
-				className={
-					mergeTailwindClasses(
-						`pointer-events-auto mx-auto w-full max-w-5xl overflow-x-auto px-2 pb-2 scrollbar-hidden sm:px-4`
-					)
-				}
+				className='pointer-events-auto mx-auto w-full max-w-5xl overflow-x-auto px-2 pb-2 scrollbar-hidden sm:px-4'
 				role="group"
 				aria-label="Planning poker values"
 			>
 				<div
-					className={
-						mergeTailwindClasses(
-							'flex min-h-48 items-end justify-center sm:min-h-56'
-						)
-					}
+					className='flex min-h-48 items-end justify-center sm:min-h-56'
 				>
 					{
-						values.map((value, index) => {
+						DefaultVoteOptions.map((value, index) => {
 							const isSelected = currentVote === value;
 
 							let liftOrHoverClass = '';
@@ -76,7 +64,8 @@ export const VotingHand = (
 										mergeTailwindClasses(
 											'relative shrink-0 transition-all duration-300 ease-out',
 											liftOrHoverClass,
-											index === 0 ? '' : mergeTailwindClasses(OVERLAP_SM, OVERLAP_DEFAULT)
+											index !== 0 ? 'max-sm:-ml-6 -ml-8 sm:-ml-8' : ''
+											// index === 0 ? '' : mergeTailwindClasses(OVERLAP_SM, OVERLAP_DEFAULT)
 										)
 									}
 								>

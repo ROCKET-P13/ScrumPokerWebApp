@@ -1,6 +1,11 @@
+import { Button } from '@ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui/Card';
 import _ from 'lodash';
+import { useMemo } from 'react';
 
+import { useResetRound } from '@/hooks/useResetRound';
+import { useRevealVotes } from '@/hooks/useRevealVotes';
+import { roomStore } from '@/stores/roomStore';
 import { Participant } from '@/types/Participant';
 
 interface ParticipantListProps {
@@ -14,10 +19,43 @@ export const ParticipantList = (
 		isRevealed,
 	}: ParticipantListProps
 ) => {
+	const { mutateAsync: revealVotes } = useRevealVotes();
+	const { mutateAsync: resetRound } = useResetRound();
+	const session = roomStore((s) => s.session);
+
+	const room = roomStore((s) => s.room);
+
+	const revealVotesButtonIsDisabled = useMemo(
+		() => {
+			return room.isRevealed || !_.every(room.participants, 'hasVoted');
+		},
+		[room.isRevealed, room.participants]
+	);
 	return (
 		<Card className="h-full">
 			<CardHeader className="px-6">
-				<CardTitle className="text-base">Participants</CardTitle>
+				<div className='flex flex-row justify-between'>
+					<CardTitle className="text-base">Participants</CardTitle>
+					{
+						session.isRoomAdmin && (
+							<div className="space-x-4">
+								<Button
+									disabled={!room.isRevealed}
+									onClick={() => resetRound()}
+								>
+											Reset Round
+								</Button>
+								<Button
+									disabled={revealVotesButtonIsDisabled}
+									onClick={() => revealVotes()}
+								>
+											Reveal Votes
+								</Button>
+							</div>
+						)
+					}
+				</div>
+
 				<CardDescription>
 					{
 						isRevealed
