@@ -6,7 +6,6 @@ export const DefaultVoteOptions = [
 	'5',
 	'8',
 	'13',
-	'21',
 	'?',
 	'☕',
 ] as const;

@@ -22,9 +22,6 @@ const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
 					border-border
 					bg-card
 					text-card-foreground
-					shadow-sm
-					transition-shadow
-					hover:shadow-md
 					`,
 					className
 					)

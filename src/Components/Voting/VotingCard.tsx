@@ -33,14 +33,14 @@ export const VotingCard = forwardRef<HTMLButtonElement, VotingCardProps>(
 				className={
 					mergeTailwindClasses(
 						`group relative flex aspect-5/7 w-full min-h-0 flex-col overflow-hidden
-						rounded-(--radius) border text-center shadow-sm transition-all duration-200
+						rounded-(--radius) border text-center transition-all duration-200
 						focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
 						focus-visible:ring-offset-2 focus-visible:ring-offset-background`,
 						isSelected
-							? `border-primary bg-primary text-primary-foreground shadow-md`
-							: `border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground hover:shadow-md`,
+							? `border-primary bg-primary text-primary-foreground`
+							: `border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground`,
 						disabled
-							? 'cursor-not-allowed opacity-60 shadow-none hover:shadow-none'
+							? 'cursor-not-allowed opacity-60'
 							: 'cursor-pointer',
 						className
 					)

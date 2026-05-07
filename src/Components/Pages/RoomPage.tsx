@@ -103,7 +103,7 @@ export const RoomPage = () => {
 				values={DefaultVoteOptions}
 				currentVote={currentVote}
 				disabled={room.isRevealed}
-				onSelect={(value) => void selectVote(value)}
+				onSelect={(value) => selectVote(value)}
 			/>
 		</div>
 	);

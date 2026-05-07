@@ -91,7 +91,7 @@ export const VotingHand = (
 
 											onSelect(value);
 										}}
-										className="w-20 shadow-md sm:w-26"
+										className="w-20 sm:w-26"
 									/>
 								</div>
 							);
