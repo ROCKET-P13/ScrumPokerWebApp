@@ -51,6 +51,7 @@ export const RoomPage = () => {
 				</div>
 
 				<ParticipantList
+					setCurrentVote={setCurrentVote}
 					participants={room.participants}
 					isRevealed={room.isRevealed}
 				/>

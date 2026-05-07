@@ -1,7 +1,7 @@
 import { Button } from '@ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ui/Card';
 import _ from 'lodash';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { useResetRound } from '@/hooks/useResetRound';
 import { useRevealVotes } from '@/hooks/useRevealVotes';
@@ -9,12 +9,14 @@ import { roomStore } from '@/stores/roomStore';
 import { Participant } from '@/types/Participant';
 
 interface ParticipantListProps {
+	setCurrentVote: (vote: string) => void;
 	participants: Participant[];
 	isRevealed: boolean;
 };
 
 export const ParticipantList = (
 	{
+		setCurrentVote,
 		participants,
 		isRevealed,
 	}: ParticipantListProps
@@ -31,6 +33,15 @@ export const ParticipantList = (
 		},
 		[room.isRevealed, room.participants]
 	);
+
+	const handleResetRound = useCallback(
+		async () => {
+			await resetRound();
+			setCurrentVote('');
+		},
+		[resetRound, setCurrentVote]
+	);
+
 	return (
 		<Card className="h-full">
 			<CardHeader className="px-6">
@@ -41,15 +52,15 @@ export const ParticipantList = (
 							<div className="space-x-4">
 								<Button
 									disabled={!room.isRevealed}
-									onClick={() => resetRound()}
+									onClick={handleResetRound}
 								>
-											Reset Round
+									Reset Round
 								</Button>
 								<Button
 									disabled={revealVotesButtonIsDisabled}
 									onClick={() => revealVotes()}
 								>
-											Reveal Votes
+									Reveal Votes
 								</Button>
 							</div>
 						)
