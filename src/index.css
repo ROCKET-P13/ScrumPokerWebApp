@@ -262,7 +262,7 @@
   }
 }
 
-/* Remote participant: face-down card enters table (duration matches runVoteCardFlight) */
+/* Remote participant: face-down card enters table (duration matches voteFlightGeometry.ts) */
 @keyframes table-face-down-in {
   from {
     opacity: 0;
@@ -306,7 +306,7 @@
   }
 }
 
-/* Flight overlay palette transition: duration/easing match runVoteCardFlight.ts */
+/* Flight overlay palette transition: duration/easing match voteFlightGeometry.ts */
 @keyframes voting-card-spectrum-to-selected {
   from {
     border-color: var(--border);

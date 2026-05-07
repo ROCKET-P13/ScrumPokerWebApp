@@ -1,15 +1,16 @@
+import { LayoutGroup, motion } from 'framer-motion';
 import _ from 'lodash';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { useTableColumnFlip } from '@/hooks/useTableColumnFlip';
 import { Participant } from '@/types/Participant';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
+import { TABLE_COLUMN_LAYOUT_TRANSITION } from '@/utils/voteFlightGeometry';
+import { VOTE_CARD_FLIGHT_DURATION_MS } from '@/utils/voteFlightGeometry';
 
 import { FaceDownCard } from './FaceDownCard';
 import { SelfVoteStack } from './SelfVoteStack';
 import { sortParticipantsByVoteArrival } from './sortParticipantsByVoteArrival';
 import { VotingCard } from './VotingCard';
-import { SELF_FLIP_COLUMN_KEY, TABLE_FACE_DOWN_MS } from './votingTableConstants';
 
 export interface VotingTableProps {
 	selfDisplayName: string;
@@ -37,7 +38,6 @@ export const VotingTable = memo(function VotingTable (
 	}: VotingTableProps
 ) {
 	const participantsList = participants;
-	const tableRowRef = useRef<HTMLDivElement>(null);
 
 	const voteArrivalOrderRef = useRef<Map<string, number>>(new Map());
 	const nextVoteSeqRef = useRef(0);
@@ -111,7 +111,7 @@ export const VotingTable = memo(function VotingTable (
 					});
 					voteArrivalOrderRef.current.delete(otherParticipant.displayName);
 					exitTimeoutsRef.current.delete(otherParticipant.displayName);
-				}, TABLE_FACE_DOWN_MS);
+				}, VOTE_CARD_FLIGHT_DURATION_MS);
 
 				exitTimeoutsRef.current.set(otherParticipant.displayName, faceDownExitAnimationTimeoutId);
 			}
@@ -228,24 +228,11 @@ export const VotingTable = memo(function VotingTable (
 		voteArrivalOrderByDisplayName
 	);
 
-	const flipLayoutKey = useMemo(
-		() =>
-			[
-				isRevealed,
-				_.map(participantsList, (participant) => `${participant.displayName}:${String(participant.hasVoted)}`).join(','),
-				_.sortBy([...exitingForLayout], (displayName) => displayName).join(','),
-				selfVoteDisplay,
-			].join('|'),
-		[isRevealed, participantsList, exitingForLayout, selfVoteDisplay]
-	);
-
 	useLayoutEffect(() => {
 		voteSnapEndPrevCommitRef.current = new Map(
 			_.map(otherParticipants, (participant) => [participant.displayName, participant.hasVoted] as const)
 		);
 	}, [otherParticipants]);
-
-	useTableColumnFlip(tableRowRef, flipLayoutKey, isRevealed, exitingForLayout);
 
 	return (
 		<div
@@ -259,92 +246,100 @@ export const VotingTable = memo(function VotingTable (
 			<p className="mb-4 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">
 				Table
 			</p>
-			<div
-				ref={tableRowRef}
-				className="flex min-h-48 flex-wrap items-end justify-center gap-4 sm:min-h-52 sm:gap-5"
-			>
-				{
-					isRevealed
-						? tableRowParticipantsReveal.map((participant, index) => {
-							const key = `${participant.displayName}-${index}`;
-							const revealedValue = participant.vote && participant.vote !== ''
-								? participant.vote
-								: '—';
+			<LayoutGroup>
+				<div className="flex min-h-48 flex-wrap items-end justify-center gap-4 sm:min-h-52 sm:gap-5">
+					{
+						isRevealed
+							? tableRowParticipantsReveal.map((participant, index) => {
+								const key = `${participant.displayName}-${index}`;
+								const revealedValue = participant.vote && participant.vote !== ''
+									? participant.vote
+									: '—';
 
-							return (
-								<div key={key} className="flex flex-col items-center gap-2">
-									<div className="flex min-h-42 w-24 items-end justify-center sm:min-h-46 sm:w-28">
-										<div className="w-full animate-table-card-in">
-											<VotingCard
-												value={revealedValue}
-												disabled
-												tabIndex={-1}
-												className="w-full shadow-md"
-											/>
-										</div>
-									</div>
-									<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
-										{participant.displayName}
-									</span>
-								</div>
-							);
-						})
-						: tableRowParticipantsHidden.map((participant) => {
-							const isSelf = participant.displayName === selfDisplayName;
-
-							if (isSelf) {
 								return (
-									<div
-										key="__self__"
+									<motion.div
+										key={key}
+										layout="position"
+										transition={TABLE_COLUMN_LAYOUT_TRANSITION}
 										className="flex flex-col items-center gap-2"
-										data-table-flip-column={SELF_FLIP_COLUMN_KEY}
 									>
 										<div className="flex min-h-42 w-24 items-end justify-center sm:min-h-46 sm:w-28">
-											<div ref={selfSlotRef} className="w-full">
-												<SelfVoteStack
-													selfVoteDisplay={selfVoteDisplay}
-													hideSelfTableCard={hideSelfTableCard}
-													selfCardRef={selfCardRef}
-													isRevealed={isRevealed}
+											<div className="w-full animate-table-card-in">
+												<VotingCard
+													value={revealedValue}
+													disabled
+													tabIndex={-1}
+													className="w-full shadow-md"
 												/>
 											</div>
 										</div>
-										{!hideSelfTableParticipantLabel && selfVoteDisplay !== '' && (
-											<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
-												{selfDisplayName}
-											</span>
-										)}
-									</div>
+										<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
+											{participant.displayName}
+										</span>
+									</motion.div>
 								);
-							}
+							})
+							: tableRowParticipantsHidden.map((participant) => {
+								const isSelf = participant.displayName === selfDisplayName;
 
-							const key = participant.displayName;
-							const isExiting = exitingForLayout.has(participant.displayName)
+								if (isSelf) {
+									return (
+										<motion.div
+											key="__self__"
+											layout="position"
+											transition={TABLE_COLUMN_LAYOUT_TRANSITION}
+											className="flex flex-col items-center gap-2"
+											data-table-flip-column='__self__'
+										>
+											<div className="flex min-h-42 w-24 items-end justify-center sm:min-h-46 sm:w-28">
+												<div ref={selfSlotRef} className="w-full">
+													<SelfVoteStack
+														selfVoteDisplay={selfVoteDisplay}
+														hideSelfTableCard={hideSelfTableCard}
+														selfCardRef={selfCardRef}
+														isRevealed={isRevealed}
+													/>
+												</div>
+											</div>
+											{!hideSelfTableParticipantLabel && selfVoteDisplay !== '' && (
+												<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
+													{selfDisplayName}
+												</span>
+											)}
+										</motion.div>
+									);
+								}
+
+								const key = participant.displayName;
+								const isExiting = exitingForLayout.has(participant.displayName)
 								&& !participant.hasVoted;
-							const motionClass = isExiting
-								? 'animate-table-face-down-out'
-								: 'animate-table-face-down-in';
+								const faceDownMotionClassName = isExiting
+									? 'animate-table-face-down-out'
+									: 'animate-table-face-down-in';
 
-							return (
-								<div
-									key={key}
-									className="flex flex-col items-center gap-2"
-									data-table-flip-column={participant.displayName}
-								>
-									<div className="flex min-h-42 w-24 items-end justify-center sm:min-h-46 sm:w-28">
-										<FaceDownCard
-											key={`${participant.displayName}-${participant.hasVoted}`}
-											className={motionClass}
-										/>
-									</div>
-									<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
-										{participant.displayName}
-									</span>
-								</div>
-							);
-						})
-				}
-			</div>
+								return (
+									<motion.div
+										key={key}
+										layout="position"
+										transition={TABLE_COLUMN_LAYOUT_TRANSITION}
+										className="flex flex-col items-center gap-2"
+										data-table-flip-column={participant.displayName}
+									>
+										<div className="flex min-h-42 w-24 items-end justify-center sm:min-h-46 sm:w-28">
+											<FaceDownCard
+												key={`${participant.displayName}-${participant.hasVoted}`}
+												className={faceDownMotionClassName}
+											/>
+										</div>
+										<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
+											{participant.displayName}
+										</span>
+									</motion.div>
+								);
+							})
+					}
+				</div>
+			</LayoutGroup>
 		</div>
 	);
 });

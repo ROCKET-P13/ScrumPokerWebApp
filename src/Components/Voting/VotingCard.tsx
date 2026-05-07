@@ -78,7 +78,7 @@ export const VotingCard = forwardRef<HTMLButtonElement, VotingCardProps>(
 				className={
 					mergeTailwindClasses(
 						`group relative flex aspect-5/7 w-full min-h-0 flex-col overflow-hidden
-						rounded-(--radius) border text-center
+						rounded-lg border text-center
 						focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
 						focus-visible:ring-offset-2 focus-visible:ring-offset-background`,
 						spectrumMode ? 'transition-none' : 'transition-all duration-200',

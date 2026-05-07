@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
@@ -7,7 +8,11 @@ import { VotingHand } from '@/Components/Voting/VotingHand';
 import { VotingTable } from '@/Components/Voting/VotingTable';
 import { useSendVote } from '@/hooks/useSendVote';
 import { roomStore } from '@/stores/roomStore';
-import { runVoteCardFlight } from '@/utils/runVoteCardFlight';
+import {
+	getVoteCardFlightFixedLayerStyle,
+	getVoteCardFlightTranslationPixels,
+	VOTE_CARD_FLIGHT_TRANSITION
+} from '@/utils/voteFlightGeometry';
 
 type VoteFlightBoundingRects = {
 	sourceBoundingRect: DOMRect;
@@ -35,9 +40,17 @@ export const RoomPage = () => {
 	const handCardButtonElementsByVoteValueRef = useRef<Map<string, HTMLButtonElement>>(new Map());
 	const tableSelfSlotWrapperRef = useRef<HTMLDivElement>(null);
 	const tableSelfCardContainerRef = useRef<HTMLDivElement>(null);
-	const flightOverlayLayerElementsByInstanceIdRef = useRef<Map<number, HTMLDivElement>>(new Map());
 	const flightOverlaySequenceCounterRef = useRef(0);
 	const flightCompletionPromiseResolveRef = useRef<(() => void) | null>(null);
+	const activeFlightBatchSnapshotRef = useRef<ActiveFlight[]>([]);
+	const flightBatchExpectedCountRef = useRef(0);
+	const flightBatchCompletedCountRef = useRef(0);
+
+	const prefersReducedMotionFromSystem = useReducedMotion();
+
+	const voteCardFlightTransition = prefersReducedMotionFromSystem
+		? { duration: 0 }
+		: VOTE_CARD_FLIGHT_TRANSITION;
 
 	const registerCardRef = useCallback((voteOptionValue: string, cardButtonElement: HTMLButtonElement | null) => {
 		if (cardButtonElement) {
@@ -85,51 +98,31 @@ export const RoomPage = () => {
 			return;
 		}
 
-		const activeFlightBatch = activeFlights;
+		activeFlightBatchSnapshotRef.current = activeFlights;
+		flightBatchCompletedCountRef.current = 0;
+		flightBatchExpectedCountRef.current = activeFlights.length;
+	}, [activeFlights]);
 
-		const flightOverlayLayerElements = activeFlightBatch.map((activeFlightRecord) =>
-			flightOverlayLayerElementsByInstanceIdRef.current.get(activeFlightRecord.flightOverlayInstanceId)
-		);
+	const handleVoteFlightOverlayAnimationComplete = useCallback(() => {
+		flightBatchCompletedCountRef.current += 1;
 
-		if (flightOverlayLayerElements.some((flightOverlayLayerElement) => flightOverlayLayerElement == null)) {
-			flightCompletionPromiseResolveRef.current?.();
-			flightCompletionPromiseResolveRef.current = null;
-			setActiveFlights([]);
-
+		if (flightBatchCompletedCountRef.current < flightBatchExpectedCountRef.current) {
 			return;
 		}
 
-		let flightAnimationCancelled = false;
+		const batchThatJustFinished = activeFlightBatchSnapshotRef.current;
 
-		void Promise.all(
-			activeFlightBatch.map((activeFlightRecord, flightIndex) =>
-				runVoteCardFlight(
-					flightOverlayLayerElements[flightIndex]!,
-					activeFlightRecord.sourceBoundingRect,
-					activeFlightRecord.destinationBoundingRect
-				)
-			)
-		).then(() => {
-			if (flightAnimationCancelled) {
-				return;
+		flushSync(() => {
+			if (batchThatJustFinished.length === 1 && batchThatJustFinished[0].direction === 'to-hand') {
+				setCurrentVote('');
 			}
 
-			flushSync(() => {
-				if (activeFlightBatch.length === 1 && activeFlightBatch[0].direction === 'to-hand') {
-					setCurrentVote('');
-				}
-
-				setActiveFlights([]);
-			});
-
-			flightCompletionPromiseResolveRef.current?.();
-			flightCompletionPromiseResolveRef.current = null;
+			setActiveFlights([]);
 		});
 
-		return () => {
-			flightAnimationCancelled = true;
-		};
-	}, [activeFlights]);
+		flightCompletionPromiseResolveRef.current?.();
+		flightCompletionPromiseResolveRef.current = null;
+	}, []);
 
 	const beginFlights = useCallback((flightPayloads: FlightPayload[]) => {
 		return new Promise<void>((resolveCompletion) => {
@@ -350,53 +343,39 @@ export const RoomPage = () => {
 			/>
 
 			{
-				activeFlights.map((activeFlightRecord) => (
-					<div
-						key={activeFlightRecord.flightOverlayInstanceId}
-						ref={(flightOverlayLayerElement) => {
-							if (flightOverlayLayerElement) {
-								flightOverlayLayerElementsByInstanceIdRef.current.set(
-									activeFlightRecord.flightOverlayInstanceId,
-									flightOverlayLayerElement
-								);
-							} else {
-								flightOverlayLayerElementsByInstanceIdRef.current.delete(
-									activeFlightRecord.flightOverlayInstanceId
-								);
-							}
-						}}
-						className="pointer-events-none fixed z-200"
-						style={{
-							left:
-								activeFlightRecord.sourceBoundingRect.left
-								+ (
-									activeFlightRecord.sourceBoundingRect.width
-									- activeFlightRecord.destinationBoundingRect.width
-								)
-								/ 2,
-							top:
-								activeFlightRecord.sourceBoundingRect.top
-								+ (
-									activeFlightRecord.sourceBoundingRect.height
-									- activeFlightRecord.destinationBoundingRect.height
-								)
-								/ 2,
-							width: activeFlightRecord.destinationBoundingRect.width,
-							height: activeFlightRecord.destinationBoundingRect.height,
-						}}
-					>
-						<VotingCard
-							value={activeFlightRecord.voteOptionValue}
-							isSelected={false}
-							spectrumFlight={
-								activeFlightRecord.direction === 'to-table' ? 'to-selected' : 'to-default'
-							}
-							disabled
-							tabIndex={-1}
-							className="h-full w-full shadow-lg"
-						/>
-					</div>
-				))
+				activeFlights.map((activeFlightRecord) => {
+					const { translationXPixels, translationYPixels } = getVoteCardFlightTranslationPixels(
+						activeFlightRecord.sourceBoundingRect,
+						activeFlightRecord.destinationBoundingRect
+					);
+
+					return (
+						<motion.div
+							key={activeFlightRecord.flightOverlayInstanceId}
+							layout={false}
+							className="pointer-events-none z-200"
+							style={getVoteCardFlightFixedLayerStyle(
+								activeFlightRecord.sourceBoundingRect,
+								activeFlightRecord.destinationBoundingRect
+							)}
+							initial={{ x: 0, y: 0 }}
+							animate={{ x: translationXPixels, y: translationYPixels }}
+							transition={voteCardFlightTransition}
+							onAnimationComplete={handleVoteFlightOverlayAnimationComplete}
+						>
+							<VotingCard
+								value={activeFlightRecord.voteOptionValue}
+								isSelected={false}
+								spectrumFlight={
+									activeFlightRecord.direction === 'to-table' ? 'to-selected' : 'to-default'
+								}
+								disabled
+								tabIndex={-1}
+								className="h-full w-full shadow-lg"
+							/>
+						</motion.div>
+					);
+				})
 			}
 		</div>
 	);
