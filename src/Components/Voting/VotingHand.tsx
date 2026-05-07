@@ -9,6 +9,10 @@ interface VotingHandProps {
 	currentVote: string;
 	disabled: boolean;
 	onSelect: (value: string) => void;
+	registerCardRef?: (value: string, element: HTMLButtonElement | null) => void;
+	suppressHandCardValue?: string | null;
+	/** While true: no hover lift (stable layout for flight) and hand ignores input */
+	interactionLocked?: boolean;
 	className?: string;
 };
 
@@ -17,6 +21,9 @@ export const VotingHand = memo(function VotingHand (
 		currentVote,
 		disabled,
 		onSelect,
+		registerCardRef,
+		suppressHandCardValue = null,
+		interactionLocked = false,
 		className = '',
 	}: VotingHandProps
 ) {
@@ -39,18 +46,29 @@ export const VotingHand = memo(function VotingHand (
 				aria-label="Planning poker values"
 			>
 				<div
-					className='flex min-h-48 items-end justify-center sm:min-h-56'
+					className={
+						mergeTailwindClasses(
+							'flex min-h-48 items-end justify-center sm:min-h-56',
+							interactionLocked ? 'pointer-events-none' : ''
+						)
+					}
 				>
 					{
 						DefaultVoteOptions.map((value, index) => {
 							const isSelected = currentVote === value;
+							const hideForFlight = suppressHandCardValue === value;
 
 							let liftOrHoverClass = '';
 							if (isSelected) {
 								liftOrHoverClass = `-translate-y-16 sm:-translate-y-18 brightness-[1.03] dark:brightness-110`;
 							}
 
-							if (!isSelected && !disabled && hoverSuppressedIndex !== index) {
+							if (
+								!interactionLocked
+								&& !isSelected
+								&& !disabled
+								&& hoverSuppressedIndex !== index
+							) {
 								liftOrHoverClass = `hover:-translate-y-16 sm:hover:-translate-y-18 hover:brightness-[1.03] dark:hover:brightness-110`;
 							}
 
@@ -62,25 +80,39 @@ export const VotingHand = memo(function VotingHand (
 									}}
 									className={
 										mergeTailwindClasses(
-											'relative shrink-0 transition-all duration-300 ease-out',
+											`relative shrink-0 transition-all duration-300 ease-out
+											motion-reduce:transition-none`,
 											liftOrHoverClass,
 											index !== 0 ? 'max-sm:-ml-6 -ml-8 sm:-ml-8' : ''
 										)
 									}
 								>
-									<VotingCard
-										value={value}
-										isSelected={isSelected}
-										disabled={disabled}
-										onClick={() => {
-											if (isSelected) {
-												setHoverSuppressedIndex(index);
-											}
+									<div
+										className={
+											mergeTailwindClasses(
+												'transition-none',
+												hideForFlight ? 'opacity-0' : ''
+											)
+										}
+									>
+										<VotingCard
+											ref={(el) => {
+												registerCardRef?.(value, el);
+											}}
+											value={value}
+											isSelected={isSelected}
+											variant={isSelected ? 'ghost' : 'default'}
+											disabled={disabled}
+											onClick={() => {
+												if (isSelected) {
+													setHoverSuppressedIndex(index);
+												}
 
-											onSelect(value);
-										}}
-										className="w-20 sm:w-26"
-									/>
+												onSelect(value);
+											}}
+											className="w-20 sm:w-26"
+										/>
+									</div>
 								</div>
 							);
 						})

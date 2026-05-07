@@ -240,3 +240,78 @@
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+@keyframes table-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-table-card-in {
+  animation: table-card-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-table-card-in {
+    animation: none;
+  }
+}
+
+/* Flight overlay palette transition: duration/easing match runVoteCardFlight.ts */
+@keyframes voting-card-spectrum-to-selected {
+  from {
+    border-color: var(--border);
+    background-color: var(--card);
+    color: var(--card-foreground);
+  }
+  to {
+    border-color: var(--primary);
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+}
+
+@keyframes voting-card-spectrum-to-default {
+  from {
+    border-color: var(--primary);
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+  to {
+    border-color: var(--border);
+    background-color: var(--card);
+    color: var(--card-foreground);
+  }
+}
+
+.animate-voting-card-spectrum-to-selected {
+  animation: voting-card-spectrum-to-selected 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-voting-card-spectrum-to-default {
+  animation: voting-card-spectrum-to-default 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-voting-card-spectrum-to-selected,
+  .animate-voting-card-spectrum-to-default {
+    animation: none;
+  }
+
+  .animate-voting-card-spectrum-to-selected {
+    border-color: var(--primary);
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  .animate-voting-card-spectrum-to-default {
+    border-color: var(--border);
+    background-color: var(--card);
+    color: var(--card-foreground);
+  }
+}
