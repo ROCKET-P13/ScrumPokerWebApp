@@ -91,7 +91,10 @@ export const RoomPage = () => {
 
 	const hideSelfTableParticipantLabel = activeFlights.some(
 		(activeFlightRecord) => activeFlightRecord.direction === 'to-hand'
-	);
+	)
+	&& !activeFlights.some((activeFlightRecord) => activeFlightRecord.direction === 'to-table');
+
+	const suppressHandLiftTransition = voteInteractionLocked && activeFlights.length > 0;
 
 	useLayoutEffect(() => {
 		if (activeFlights.length === 0) {
@@ -337,6 +340,7 @@ export const RoomPage = () => {
 				currentVote={currentVote}
 				disabled={room.isRevealed}
 				interactionLocked={voteInteractionLocked}
+				suppressHandLiftTransition={suppressHandLiftTransition}
 				liftDuringFlightForValues={activeFlights.map((activeFlightRecord) => activeFlightRecord.voteOptionValue)}
 				onSelect={selectVote}
 				registerCardRef={registerCardRef}

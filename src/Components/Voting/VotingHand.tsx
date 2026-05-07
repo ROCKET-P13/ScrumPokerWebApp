@@ -15,6 +15,8 @@ interface VotingHandProps {
 	liftDuringFlightForValues?: readonly string[];
 	/** While true: no hover lift (stable layout for flight) and hand ignores input */
 	interactionLocked?: boolean;
+	/** While true: lift transform uses transition-none during overlay flights; input still gated by interactionLocked */
+	suppressHandLiftTransition?: boolean;
 	className?: string;
 };
 
@@ -27,6 +29,7 @@ export const VotingHand = memo(function VotingHand (
 		suppressHandCardValue = null,
 		liftDuringFlightForValues = [],
 		interactionLocked = false,
+		suppressHandLiftTransition = false,
 		className = '',
 	}: VotingHandProps
 ) {
@@ -85,8 +88,8 @@ export const VotingHand = memo(function VotingHand (
 									}}
 									className={
 										mergeTailwindClasses(
-											`relative shrink-0 transition-all duration-300 ease-out
-											motion-reduce:transition-none`,
+											`relative shrink-0 ease-out motion-reduce:transition-none`,
+											suppressHandLiftTransition ? 'transition-none' : 'transition-all duration-300',
 											liftOrHoverClass,
 											index !== 0 ? 'max-sm:-ml-6 -ml-8 sm:-ml-8' : ''
 										)

@@ -1,4 +1,4 @@
-import { LayoutGroup, motion } from 'framer-motion';
+import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import _ from 'lodash';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -37,6 +37,7 @@ export const VotingTable = memo(function VotingTable (
 		className = '',
 	}: VotingTableProps
 ) {
+	const prefersReducedMotion = useReducedMotion();
 	const participantsList = participants;
 
 	const voteArrivalOrderRef = useRef<Map<string, number>>(new Map());
@@ -301,10 +302,22 @@ export const VotingTable = memo(function VotingTable (
 													/>
 												</div>
 											</div>
-											{!hideSelfTableParticipantLabel && selfVoteDisplay !== '' && (
-												<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
+											{selfVoteDisplay !== '' && (
+												<motion.span
+													className="max-w-28 truncate text-center text-xs text-muted-foreground"
+													initial={{ opacity: 0 }}
+													animate={{
+														opacity: hideSelfTableParticipantLabel ? 0 : 1,
+													}}
+													transition={
+														prefersReducedMotion
+															? { duration: 0 }
+															: { duration: 0.28, ease: [0.22, 1, 0.36, 1] }
+													}
+													aria-hidden={hideSelfTableParticipantLabel}
+												>
 													{selfDisplayName}
-												</span>
+												</motion.span>
 											)}
 										</motion.div>
 									);

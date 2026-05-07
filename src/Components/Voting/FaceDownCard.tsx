@@ -20,8 +20,7 @@ export const FaceDownCard = memo(function FaceDownCard ({ className = '' }: { cl
 			/>
 			<div className="pointer-events-none flex flex-1 items-center justify-center p-2">
 				<div
-					className="h-10 w-10 rounded-full border-2 border-primary/35 bg-primary/10"
-					aria-hidden
+					className="h-10 w-10 rounded-full border-2 border-primary/50 bg-primary/20"
 				/>
 			</div>
 		</div>
