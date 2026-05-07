@@ -9,33 +9,41 @@ import { useSendVote } from '@/hooks/useSendVote';
 import { roomStore } from '@/stores/roomStore';
 import { runVoteCardFlight } from '@/utils/runVoteCardFlight';
 
-type ActiveFlight = {
-	value: string;
-	from: DOMRect;
-	to: DOMRect;
+type VoteFlightBoundingRects = {
+	sourceBoundingRect: DOMRect;
+	destinationBoundingRect: DOMRect;
+};
+
+type FlightPayload = {
+	voteOptionValue: string;
+	sourceBoundingRect: DOMRect;
+	destinationBoundingRect: DOMRect;
 	direction: 'to-table' | 'to-hand';
 };
 
+type ActiveFlight = FlightPayload & { flightOverlayInstanceId: number };
+
 export const RoomPage = () => {
-	const session = roomStore((s) => s.session);
-	const room = roomStore((s) => s.room);
+	const session = roomStore((storeSnapshot) => storeSnapshot.session);
+	const room = roomStore((storeSnapshot) => storeSnapshot.room);
 	const { mutateAsync: sendVote } = useSendVote();
 	const [currentVote, setCurrentVote] = useState('');
-	const [activeFlight, setActiveFlight] = useState<ActiveFlight | null>(null);
+	const [activeFlights, setActiveFlights] = useState<ActiveFlight[]>([]);
 	const [voteInteractionLocked, setVoteInteractionLocked] = useState(false);
 
 	const voteInteractionLockedRef = useRef(false);
-	const cardRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
-	const selfSlotRef = useRef<HTMLDivElement>(null);
-	const selfCardRef = useRef<HTMLDivElement>(null);
-	const flightLayerRef = useRef<HTMLDivElement>(null);
-	const flightCompleteRef = useRef<(() => void) | null>(null);
+	const handCardButtonElementsByVoteValueRef = useRef<Map<string, HTMLButtonElement>>(new Map());
+	const tableSelfSlotWrapperRef = useRef<HTMLDivElement>(null);
+	const tableSelfCardContainerRef = useRef<HTMLDivElement>(null);
+	const flightOverlayLayerElementsByInstanceIdRef = useRef<Map<number, HTMLDivElement>>(new Map());
+	const flightOverlaySequenceCounterRef = useRef(0);
+	const flightCompletionPromiseResolveRef = useRef<(() => void) | null>(null);
 
-	const registerCardRef = useCallback((value: string, element: HTMLButtonElement | null) => {
-		if (element) {
-			cardRefs.current.set(value, element);
+	const registerCardRef = useCallback((voteOptionValue: string, cardButtonElement: HTMLButtonElement | null) => {
+		if (cardButtonElement) {
+			handCardButtonElementsByVoteValueRef.current.set(voteOptionValue, cardButtonElement);
 		} else {
-			cardRefs.current.delete(value);
+			handCardButtonElementsByVoteValueRef.current.delete(voteOptionValue);
 		}
 	}, []);
 
@@ -45,96 +53,126 @@ export const RoomPage = () => {
 		}
 
 		if (room.isRevealed) {
-			const me = room.participants.find((p) => p.displayName === session.displayName);
+			const sessionParticipant = room.participants.find(
+				(participant) => participant.displayName === session.displayName
+			);
 
-			return me?.vote ?? currentVote;
+			return sessionParticipant?.vote ?? currentVote;
 		}
 
 		return currentVote;
 	}, [room, session.displayName, currentVote]);
 
-	const hideSelfTableCard
-		= Boolean(
-			activeFlight
-			&& selfVoteDisplay !== ''
-			&& activeFlight.value === selfVoteDisplay
-			&& (
-				activeFlight.direction === 'to-hand'
-				|| activeFlight.direction === 'to-table'
-			)
-		);
+	const hideSelfTableCard = Boolean(
+		activeFlights.length > 0
+		&& selfVoteDisplay !== ''
+		&& activeFlights.some(
+			(activeFlightRecord) =>
+				activeFlightRecord.voteOptionValue === selfVoteDisplay
+				&& (
+					activeFlightRecord.direction === 'to-hand'
+					|| activeFlightRecord.direction === 'to-table'
+				)
+		)
+	);
+
+	const hideSelfTableParticipantLabel = activeFlights.some(
+		(activeFlightRecord) => activeFlightRecord.direction === 'to-hand'
+	);
 
 	useLayoutEffect(() => {
-		if (!activeFlight) {
+		if (activeFlights.length === 0) {
 			return;
 		}
 
-		const el = flightLayerRef.current;
+		const activeFlightBatch = activeFlights;
 
-		if (!el) {
-			flightCompleteRef.current?.();
-			flightCompleteRef.current = null;
-			setActiveFlight(null);
+		const flightOverlayLayerElements = activeFlightBatch.map((activeFlightRecord) =>
+			flightOverlayLayerElementsByInstanceIdRef.current.get(activeFlightRecord.flightOverlayInstanceId)
+		);
+
+		if (flightOverlayLayerElements.some((flightOverlayLayerElement) => flightOverlayLayerElement == null)) {
+			flightCompletionPromiseResolveRef.current?.();
+			flightCompletionPromiseResolveRef.current = null;
+			setActiveFlights([]);
 
 			return;
 		}
 
-		let cancelled = false;
+		let flightAnimationCancelled = false;
 
-		void runVoteCardFlight(el, activeFlight.from, activeFlight.to).then(() => {
-			if (cancelled) {
+		void Promise.all(
+			activeFlightBatch.map((activeFlightRecord, flightIndex) =>
+				runVoteCardFlight(
+					flightOverlayLayerElements[flightIndex]!,
+					activeFlightRecord.sourceBoundingRect,
+					activeFlightRecord.destinationBoundingRect
+				)
+			)
+		).then(() => {
+			if (flightAnimationCancelled) {
 				return;
 			}
 
 			flushSync(() => {
-				if (activeFlight.direction === 'to-hand') {
+				if (activeFlightBatch.length === 1 && activeFlightBatch[0].direction === 'to-hand') {
 					setCurrentVote('');
 				}
 
-				setActiveFlight(null);
+				setActiveFlights([]);
 			});
 
-			flightCompleteRef.current?.();
-			flightCompleteRef.current = null;
+			flightCompletionPromiseResolveRef.current?.();
+			flightCompletionPromiseResolveRef.current = null;
 		});
 
 		return () => {
-			cancelled = true;
+			flightAnimationCancelled = true;
 		};
-	}, [activeFlight]);
+	}, [activeFlights]);
 
-	const beginFlight = useCallback((payload: ActiveFlight) => {
-		return new Promise<void>((resolve) => {
-			flightCompleteRef.current = resolve;
-			setActiveFlight(payload);
+	const beginFlights = useCallback((flightPayloads: FlightPayload[]) => {
+		return new Promise<void>((resolveCompletion) => {
+			flightCompletionPromiseResolveRef.current = resolveCompletion;
+			setActiveFlights(
+				flightPayloads.map((flightPayload) => ({
+					...flightPayload,
+					flightOverlayInstanceId: ++flightOverlaySequenceCounterRef.current,
+				}))
+			);
 		});
 	}, []);
 
-	const measureFlightToTable = useCallback((value: string) => {
-		const fromEl = cardRefs.current.get(value);
-		const toEl = selfSlotRef.current;
+	const beginFlight = useCallback(
+		(flightPayload: FlightPayload) => beginFlights([flightPayload]),
+		[beginFlights]
+	);
 
-		if (!fromEl || !toEl) {
+	const measureFlightBoundingRectsToTable = useCallback((voteOptionValue: string): VoteFlightBoundingRects | null => {
+		const handCardButtonElement = handCardButtonElementsByVoteValueRef.current.get(voteOptionValue);
+		const tableSelfSlotWrapperElement = tableSelfSlotWrapperRef.current;
+
+		if (!handCardButtonElement || !tableSelfSlotWrapperElement) {
 			return null;
 		}
 
 		return {
-			from: fromEl.getBoundingClientRect(),
-			to: toEl.getBoundingClientRect(),
+			sourceBoundingRect: handCardButtonElement.getBoundingClientRect(),
+			destinationBoundingRect: tableSelfSlotWrapperElement.getBoundingClientRect(),
 		};
 	}, []);
 
-	const measureFlightToHand = useCallback((value: string) => {
-		const fromEl = selfCardRef.current;
-		const toEl = cardRefs.current.get(value);
+	const measureFlightBoundingRectsToHand = useCallback((voteOptionValue: string): VoteFlightBoundingRects | null => {
+		const tableSelfCardContainerElement = tableSelfCardContainerRef.current;
+		const handCardButtonElement = handCardButtonElementsByVoteValueRef.current.get(voteOptionValue);
 
-		if (!fromEl || !toEl) {
+		if (!tableSelfCardContainerElement || !handCardButtonElement) {
 			return null;
 		}
 
 		return {
-			from: fromEl.getBoundingClientRect(),
-			to: toEl.getBoundingClientRect(),
+			sourceBoundingRect: tableSelfCardContainerElement.getBoundingClientRect(),
+			destinationBoundingRect: handCardButtonElement.getBoundingClientRect(),
 		};
 	}, []);
 
@@ -154,17 +192,17 @@ export const RoomPage = () => {
 			});
 
 			try {
-				const runToHandFlightIfPossible = async (value: string): Promise<boolean> => {
-					const measured = measureFlightToHand(value);
+				const runReturnToHandFlightIfPossible = async (voteOptionValue: string): Promise<boolean> => {
+					const handReturnFlightBoundingRects = measureFlightBoundingRectsToHand(voteOptionValue);
 
-					if (!measured) {
+					if (!handReturnFlightBoundingRects) {
 						return false;
 					}
 
 					await beginFlight({
-						value,
-						from: measured.from,
-						to: measured.to,
+						voteOptionValue,
+						sourceBoundingRect: handReturnFlightBoundingRects.sourceBoundingRect,
+						destinationBoundingRect: handReturnFlightBoundingRects.destinationBoundingRect,
 						direction: 'to-hand',
 					});
 
@@ -172,9 +210,9 @@ export const RoomPage = () => {
 				};
 
 				if (newVoteValue === currentVote) {
-					const flew = await runToHandFlightIfPossible(currentVote);
+					const didRunHandReturnFlightAnimation = await runReturnToHandFlightIfPossible(currentVote);
 
-					if (!flew) {
+					if (!didRunHandReturnFlightAnimation) {
 						setCurrentVote('');
 					}
 
@@ -183,32 +221,61 @@ export const RoomPage = () => {
 					return '';
 				}
 
-				if (currentVote !== '') {
-					const flewAway = await runToHandFlightIfPossible(currentVote);
+				if (currentVote !== '' && newVoteValue !== currentVote) {
+					const previousVoteValue = currentVote;
+					const returnToHandFlightBoundingRects = measureFlightBoundingRectsToHand(previousVoteValue);
 
-					if (!flewAway) {
-						flushSync(() => {
-							setCurrentVote('');
+					flushSync(() => {
+						setCurrentVote(newVoteValue);
+					});
+
+					const placeOnTableFlightBoundingRects = measureFlightBoundingRectsToTable(newVoteValue);
+
+					if (returnToHandFlightBoundingRects && placeOnTableFlightBoundingRects) {
+						await beginFlights([
+							{
+								voteOptionValue: previousVoteValue,
+								sourceBoundingRect: returnToHandFlightBoundingRects.sourceBoundingRect,
+								destinationBoundingRect: returnToHandFlightBoundingRects.destinationBoundingRect,
+								direction: 'to-hand',
+							},
+							{
+								voteOptionValue: newVoteValue,
+								sourceBoundingRect: placeOnTableFlightBoundingRects.sourceBoundingRect,
+								destinationBoundingRect: placeOnTableFlightBoundingRects.destinationBoundingRect,
+								direction: 'to-table',
+							},
+						]);
+					} else if (placeOnTableFlightBoundingRects) {
+						await beginFlight({
+							voteOptionValue: newVoteValue,
+							sourceBoundingRect: placeOnTableFlightBoundingRects.sourceBoundingRect,
+							destinationBoundingRect: placeOnTableFlightBoundingRects.destinationBoundingRect,
+							direction: 'to-table',
 						});
 					}
+
+					await sendVote({ vote: newVoteValue });
+
+					return newVoteValue;
 				}
 
 				flushSync(() => {
 					setCurrentVote(newVoteValue);
 				});
 
-				const measuredToTable = measureFlightToTable(newVoteValue);
+				const firstVoteTableFlightBoundingRects = measureFlightBoundingRectsToTable(newVoteValue);
 
-				if (!measuredToTable) {
+				if (!firstVoteTableFlightBoundingRects) {
 					await sendVote({ vote: newVoteValue });
 
 					return newVoteValue;
 				}
 
 				await beginFlight({
-					value: newVoteValue,
-					from: measuredToTable.from,
-					to: measuredToTable.to,
+					voteOptionValue: newVoteValue,
+					sourceBoundingRect: firstVoteTableFlightBoundingRects.sourceBoundingRect,
+					destinationBoundingRect: firstVoteTableFlightBoundingRects.destinationBoundingRect,
 					direction: 'to-table',
 				});
 
@@ -225,8 +292,9 @@ export const RoomPage = () => {
 			currentVote,
 			sendVote,
 			beginFlight,
-			measureFlightToTable,
-			measureFlightToHand,
+			beginFlights,
+			measureFlightBoundingRectsToTable,
+			measureFlightBoundingRectsToHand,
 		]
 	);
 
@@ -265,8 +333,9 @@ export const RoomPage = () => {
 					isRevealed={room.isRevealed}
 					selfVoteDisplay={selfVoteDisplay}
 					hideSelfTableCard={hideSelfTableCard}
-					selfSlotRef={selfSlotRef}
-					selfCardRef={selfCardRef}
+					hideSelfTableParticipantLabel={hideSelfTableParticipantLabel}
+					selfSlotRef={tableSelfSlotWrapperRef}
+					selfCardRef={tableSelfCardContainerRef}
 					className="mb-8"
 				/>
 
@@ -275,34 +344,59 @@ export const RoomPage = () => {
 				currentVote={currentVote}
 				disabled={room.isRevealed}
 				interactionLocked={voteInteractionLocked}
+				liftDuringFlightForValues={activeFlights.map((activeFlightRecord) => activeFlightRecord.voteOptionValue)}
 				onSelect={selectVote}
 				registerCardRef={registerCardRef}
 			/>
 
 			{
-				activeFlight && (
+				activeFlights.map((activeFlightRecord) => (
 					<div
-						ref={flightLayerRef}
+						key={activeFlightRecord.flightOverlayInstanceId}
+						ref={(flightOverlayLayerElement) => {
+							if (flightOverlayLayerElement) {
+								flightOverlayLayerElementsByInstanceIdRef.current.set(
+									activeFlightRecord.flightOverlayInstanceId,
+									flightOverlayLayerElement
+								);
+							} else {
+								flightOverlayLayerElementsByInstanceIdRef.current.delete(
+									activeFlightRecord.flightOverlayInstanceId
+								);
+							}
+						}}
 						className="pointer-events-none fixed z-200"
 						style={{
-							left: activeFlight.from.left,
-							top: activeFlight.from.top,
-							width: activeFlight.from.width,
-							height: activeFlight.from.height,
+							left:
+								activeFlightRecord.sourceBoundingRect.left
+								+ (
+									activeFlightRecord.sourceBoundingRect.width
+									- activeFlightRecord.destinationBoundingRect.width
+								)
+								/ 2,
+							top:
+								activeFlightRecord.sourceBoundingRect.top
+								+ (
+									activeFlightRecord.sourceBoundingRect.height
+									- activeFlightRecord.destinationBoundingRect.height
+								)
+								/ 2,
+							width: activeFlightRecord.destinationBoundingRect.width,
+							height: activeFlightRecord.destinationBoundingRect.height,
 						}}
 					>
 						<VotingCard
-							value={activeFlight.value}
+							value={activeFlightRecord.voteOptionValue}
 							isSelected={false}
 							spectrumFlight={
-								activeFlight.direction === 'to-table' ? 'to-selected' : 'to-default'
+								activeFlightRecord.direction === 'to-table' ? 'to-selected' : 'to-default'
 							}
 							disabled
 							tabIndex={-1}
 							className="h-full w-full shadow-lg"
 						/>
 					</div>
-				)
+				))
 			}
 		</div>
 	);

@@ -262,6 +262,50 @@
   }
 }
 
+/* Remote participant: face-down card enters table (duration matches runVoteCardFlight) */
+@keyframes table-face-down-in {
+  from {
+    opacity: 0;
+    transform: translateY(2.75rem) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-table-face-down-in {
+  animation: table-face-down-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-table-face-down-in {
+    animation: none;
+  }
+}
+
+@keyframes table-face-down-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(2.75rem) scale(0.9);
+  }
+}
+
+.animate-table-face-down-out {
+  animation: table-face-down-out 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-table-face-down-out {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 /* Flight overlay palette transition: duration/easing match runVoteCardFlight.ts */
 @keyframes voting-card-spectrum-to-selected {
   from {

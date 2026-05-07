@@ -11,6 +11,8 @@ interface VotingHandProps {
 	onSelect: (value: string) => void;
 	registerCardRef?: (value: string, element: HTMLButtonElement | null) => void;
 	suppressHandCardValue?: string | null;
+	/** Keeps these values visually lifted (same as selected) while their flight overlay runs */
+	liftDuringFlightForValues?: readonly string[];
 	/** While true: no hover lift (stable layout for flight) and hand ignores input */
 	interactionLocked?: boolean;
 	className?: string;
@@ -23,6 +25,7 @@ export const VotingHand = memo(function VotingHand (
 		onSelect,
 		registerCardRef,
 		suppressHandCardValue = null,
+		liftDuringFlightForValues = [],
 		interactionLocked = false,
 		className = '',
 	}: VotingHandProps
@@ -57,15 +60,17 @@ export const VotingHand = memo(function VotingHand (
 						DefaultVoteOptions.map((value, index) => {
 							const isSelected = currentVote === value;
 							const hideForFlight = suppressHandCardValue === value;
+							const liftForFlightOverlay = liftDuringFlightForValues.includes(value);
 
 							let liftOrHoverClass = '';
-							if (isSelected) {
+							if (isSelected || liftForFlightOverlay) {
 								liftOrHoverClass = `-translate-y-16 sm:-translate-y-18 brightness-[1.03] dark:brightness-110`;
 							}
 
 							if (
 								!interactionLocked
 								&& !isSelected
+								&& !liftForFlightOverlay
 								&& !disabled
 								&& hoverSuppressedIndex !== index
 							) {
@@ -96,8 +101,8 @@ export const VotingHand = memo(function VotingHand (
 										}
 									>
 										<VotingCard
-											ref={(el) => {
-												registerCardRef?.(value, el);
+											ref={(cardButtonElement) => {
+												registerCardRef?.(value, cardButtonElement);
 											}}
 											value={value}
 											isSelected={isSelected}
