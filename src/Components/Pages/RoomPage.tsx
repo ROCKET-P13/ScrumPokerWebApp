@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import _ from 'lodash';
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
@@ -46,8 +46,32 @@ export const RoomPage = () => {
 	const activeFlightBatchSnapshotRef = useRef<ActiveFlight[]>([]);
 	const flightBatchExpectedCountRef = useRef(0);
 	const flightBatchCompletedCountRef = useRef(0);
+	const prevSelfHadVoteRef = useRef<boolean | null>(null);
 
 	const prefersReducedMotionFromSystem = useReducedMotion();
+
+	useEffect(() => {
+		if (!session.displayName) {
+			return;
+		}
+
+		const selfParticipant = _.find(
+			room.participants,
+			(participant) => participant.displayName === session.displayName
+		);
+
+		if (!selfParticipant) {
+			return;
+		}
+
+		const hasVoteNow = Boolean(selfParticipant.hasVoted);
+
+		if (prevSelfHadVoteRef.current === true && !hasVoteNow && currentVote !== '') {
+			setCurrentVote('');
+		}
+
+		prevSelfHadVoteRef.current = hasVoteNow;
+	}, [room.participants, session.displayName, currentVote]);
 
 	const voteCardFlightTransition = prefersReducedMotionFromSystem
 		? { duration: 0 }
