@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import { voteArrivalStore } from '@/stores/voteArrivalStore';
 import { Room } from '@/types/Room';
 
 type RoomStoreSession = {
@@ -52,6 +53,8 @@ export const roomStore = create<RoomStoreState>()(
 			},
 
 			clearSession: () => {
+				voteArrivalStore.getState().resetAll();
+
 				set({
 					session: {
 						roomCode: null,

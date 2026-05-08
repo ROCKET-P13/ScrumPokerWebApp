@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 import { memo, useEffect, useState } from 'react';
 
-import { Participant } from '@/types/Participant';
+import { useVoteArrivalStore } from '@/stores/voteArrivalStore';
+import { sortParticipantsByVoteArrival } from '@/utils/sortParticipantsByVoteArrival';
 import { TABLE_DECK_FADE_DURATION_MS, TABLE_DECK_STACK_DURATION_MS } from '@/utils/voteFlightGeometry';
 
 import { FlippableFaceDownVoteCard } from './FlippableFaceDownVoteCard';
-import { sortParticipantsByVoteArrival } from './sortParticipantsByVoteArrival';
 
 /** Approximate column pitch (card width + gap) for centering the stack */
 const CARD_STACK_PITCH_PX = 124;
@@ -60,18 +60,18 @@ function GatherFlippableCard ({
 }
 
 export const TableDeckGatherOverlay = memo(function TableDeckGatherOverlay ({
-	snapshotParticipants,
-	voteOrderByDisplayName,
 	phase,
 	selfDisplayName,
 	prefersReducedMotion,
 }: {
-	snapshotParticipants: Participant[];
-	voteOrderByDisplayName: ReadonlyMap<string, number>;
 	phase: 'flip' | 'stack' | 'fade';
 	selfDisplayName: string;
 	prefersReducedMotion: boolean | null;
 }) {
+	const snapshotParticipants = useVoteArrivalStore((state) => state.gatherSnapshotParticipants) ?? [];
+	const voteOrderRecord = useVoteArrivalStore((state) => state.gatherFrozenVoteOrderByDisplayName);
+	const voteOrderByDisplayName = new Map(Object.entries(voteOrderRecord ?? {}));
+
 	const sorted = sortParticipantsByVoteArrival(snapshotParticipants, voteOrderByDisplayName);
 	const reduced = Boolean(prefersReducedMotion);
 

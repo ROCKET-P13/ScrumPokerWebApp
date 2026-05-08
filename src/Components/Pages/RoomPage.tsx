@@ -86,10 +86,6 @@ export const RoomPage = () => {
 	}, []);
 
 	const selfVoteDisplay = useMemo(() => {
-		if (!room) {
-			return currentVote;
-		}
-
 		if (room.isRevealed) {
 			const sessionParticipant = _.find(
 				room.participants,
@@ -102,23 +98,40 @@ export const RoomPage = () => {
 		return currentVote;
 	}, [room, session.displayName, currentVote]);
 
-	const hideSelfTableCard = Boolean(
-		activeFlights.length > 0
-		&& selfVoteDisplay !== ''
-		&& activeFlights.some(
-			(activeFlightRecord) =>
-				activeFlightRecord.voteOptionValue === selfVoteDisplay
+	const activeFlightUi = useMemo(() => {
+		let anyToHand = false;
+		let anyToTable = false;
+		let selfVoteInFlight = false;
+		const liftDuringFlightForValues: string[] = [];
+
+		for (const activeFlightRecord of activeFlights) {
+			liftDuringFlightForValues.push(activeFlightRecord.voteOptionValue);
+			if (activeFlightRecord.direction === 'to-hand') {
+				anyToHand = true;
+			}
+			if (activeFlightRecord.direction === 'to-table') {
+				anyToTable = true;
+			}
+			if (
+				selfVoteDisplay !== ''
+				&& activeFlightRecord.voteOptionValue === selfVoteDisplay
 				&& (
 					activeFlightRecord.direction === 'to-hand'
 					|| activeFlightRecord.direction === 'to-table'
 				)
-		)
-	);
+			) {
+				selfVoteInFlight = true;
+			}
+		}
 
-	const hideSelfTableParticipantLabel = activeFlights.some(
-		(activeFlightRecord) => activeFlightRecord.direction === 'to-hand'
-	)
-	&& !activeFlights.some((activeFlightRecord) => activeFlightRecord.direction === 'to-table');
+		const hasFlights = activeFlights.length > 0;
+
+		return {
+			hideSelfTableCard: hasFlights && selfVoteDisplay !== '' && selfVoteInFlight,
+			hideSelfTableParticipantLabel: anyToHand && !anyToTable,
+			liftDuringFlightForValues,
+		};
+	}, [activeFlights, selfVoteDisplay]);
 
 	const suppressHandLiftTransition = voteInteractionLocked && activeFlights.length > 0;
 
@@ -345,7 +358,6 @@ export const RoomPage = () => {
 
 				<div className='flex flex-col gap-4'>
 					<ParticipantList
-						setCurrentVote={setCurrentVote}
 						participants={room.participants}
 						isRevealed={room.isRevealed}
 					/>
@@ -355,8 +367,8 @@ export const RoomPage = () => {
 						participants={room.participants}
 						isRevealed={room.isRevealed}
 						selfVoteDisplay={selfVoteDisplay}
-						hideSelfTableCard={hideSelfTableCard}
-						hideSelfTableParticipantLabel={hideSelfTableParticipantLabel}
+						hideSelfTableCard={activeFlightUi.hideSelfTableCard}
+						hideSelfTableParticipantLabel={activeFlightUi.hideSelfTableParticipantLabel}
 						selfSlotRef={tableSelfSlotWrapperRef}
 						selfCardRef={tableSelfCardContainerRef}
 						className="mb-8"
@@ -369,7 +381,7 @@ export const RoomPage = () => {
 				disabled={room.isRevealed}
 				interactionLocked={voteInteractionLocked}
 				suppressHandLiftTransition={suppressHandLiftTransition}
-				liftDuringFlightForValues={activeFlights.map((activeFlightRecord) => activeFlightRecord.voteOptionValue)}
+				liftDuringFlightForValues={activeFlightUi.liftDuringFlightForValues}
 				onSelect={selectVote}
 				registerCardRef={registerCardRef}
 			/>

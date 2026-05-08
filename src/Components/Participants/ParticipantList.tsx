@@ -9,14 +9,12 @@ import { roomStore } from '@/stores/roomStore';
 import { Participant } from '@/types/Participant';
 
 interface ParticipantListProps {
-	setCurrentVote: (vote: string) => void;
 	participants: Participant[];
 	isRevealed: boolean;
 };
 
 export const ParticipantList = (
 	{
-		setCurrentVote,
 		participants,
 		isRevealed,
 	}: ParticipantListProps
@@ -34,13 +32,9 @@ export const ParticipantList = (
 		[room.isRevealed, room.participants]
 	);
 
-	const handleResetRound = useCallback(
-		async () => {
-			await resetRound();
-			setCurrentVote('');
-		},
-		[resetRound, setCurrentVote]
-	);
+	const handleResetRound = useCallback(async () => {
+		await resetRound();
+	}, [resetRound]);
 
 	return (
 		<Card className="h-full">

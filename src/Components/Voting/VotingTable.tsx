@@ -2,8 +2,10 @@ import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import _ from 'lodash';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { voteArrivalStore } from '@/stores/voteArrivalStore';
 import { Participant } from '@/types/Participant';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
+import { sortParticipantsByVoteArrival } from '@/utils/sortParticipantsByVoteArrival';
 import {
 	TABLE_CARD_FLIP_DURATION_MS,
 	TABLE_COLUMN_LAYOUT_TRANSITION,
@@ -13,7 +15,6 @@ import {
 } from '@/utils/voteFlightGeometry';
 
 import { FlippableFaceDownVoteCard } from './FlippableFaceDownVoteCard';
-import { sortParticipantsByVoteArrival } from './sortParticipantsByVoteArrival';
 import { TableDeckGatherOverlay } from './TableDeckGatherOverlay';
 import { VotingCard } from './VotingCard';
 
@@ -31,8 +32,6 @@ export interface VotingTableProps {
 
 type GatherDeckState = {
 	phase: 'flip' | 'stack' | 'fade';
-	snapshotParticipants: Participant[];
-	voteOrderMap: Map<string, number>;
 };
 
 export const VotingTable = memo(function VotingTable (
@@ -51,24 +50,23 @@ export const VotingTable = memo(function VotingTable (
 	const prefersReducedMotion = useReducedMotion();
 	const participantsList = participants;
 
-	const voteArrivalOrderRef = useRef<Map<string, number>>(new Map());
-	const voteArrivalOrderBackupRef = useRef<Map<string, number>>(new Map());
-	const nextVoteSeqRef = useRef(0);
+	const otherParticipants = useMemo(
+		() => _.filter(
+			participantsList,
+			(participant) => participant.displayName !== selfDisplayName
+		),
+		[participantsList, selfDisplayName]
+	);
+
 	const prevOthersHasVotedRef = useRef<Map<string, boolean>>(new Map());
 	const exitTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 	const skipParticipantTransitionEffectRef = useRef(true);
 	const [exitingVoteNames, setExitingVoteNames] = useState(() => new Set<string>());
 	const voteSnapEndPrevCommitRef = useRef<Map<string, boolean>>(new Map());
-	const prevParticipantsRef = useRef(participantsList);
+	const revealedRoundParticipantsRef = useRef<Participant[]>([]);
 	const prevIsRevealedRef = useRef(isRevealed);
 	const [gatherDeck, setGatherDeck] = useState<GatherDeckState | null>(null);
 
-	voteArrivalOrderBackupRef.current = new Map(voteArrivalOrderRef.current);
-
-	const otherParticipants = _.filter(
-		participantsList,
-		(participant) => participant.displayName !== selfDisplayName
-	);
 	const hasAnyOtherParticipantVoted = otherParticipants.some((participant) => participant.hasVoted);
 
 	useEffect(() => {
@@ -86,21 +84,16 @@ export const VotingTable = memo(function VotingTable (
 	}, []);
 
 	useEffect(() => {
-		const otherParticipantsList = _.filter(
-			participantsList,
-			(participant) => participant.displayName !== selfDisplayName
-		);
-
 		if (skipParticipantTransitionEffectRef.current) {
 			skipParticipantTransitionEffectRef.current = false;
 			prevOthersHasVotedRef.current = new Map(
-				otherParticipantsList.map((participant) => [participant.displayName, participant.hasVoted])
+				otherParticipants.map((participant) => [participant.displayName, participant.hasVoted])
 			);
 
 			return;
 		}
 
-		for (const otherParticipant of otherParticipantsList) {
+		for (const otherParticipant of otherParticipants) {
 			const hadVotedPreviously = prevOthersHasVotedRef.current.get(otherParticipant.displayName) ?? false;
 			const hasVotedNow = otherParticipant.hasVoted;
 
@@ -127,7 +120,7 @@ export const VotingTable = memo(function VotingTable (
 
 						return nextExitingVoteDisplayNames;
 					});
-					voteArrivalOrderRef.current.delete(otherParticipant.displayName);
+					voteArrivalStore.getState().removeVoteArrival(otherParticipant.displayName);
 					exitTimeoutsRef.current.delete(otherParticipant.displayName);
 				}, VOTE_CARD_FLIGHT_DURATION_MS);
 
@@ -157,9 +150,9 @@ export const VotingTable = memo(function VotingTable (
 		}
 
 		prevOthersHasVotedRef.current = new Map(
-			otherParticipantsList.map((participant) => [participant.displayName, participant.hasVoted])
+			otherParticipants.map((participant) => [participant.displayName, participant.hasVoted])
 		);
-	}, [participantsList, selfDisplayName]);
+	}, [otherParticipants]);
 
 	const exitingForLayout = useMemo(() => {
 		const mergedExitingParticipantDisplayNames = new Set(exitingVoteNames);
@@ -189,31 +182,20 @@ export const VotingTable = memo(function VotingTable (
 
 	const selfHasVisibleTableActivity = Boolean(selfVoteDisplay !== '' || hideSelfTableCard);
 
-	const noCardsOnTable
-		= !hasAnyOtherParticipantVoted && exitingForLayout.size === 0 && !selfHasVisibleTableActivity;
+	voteArrivalStore.getState().syncTableTick({
+		participantsList,
+		selfDisplayName,
+		selfVoteDisplay,
+		isRevealed,
+		hideSelfTableCard,
+		gatherDeckIsNull: gatherDeck === null,
+		exitingForLayout,
+		hasAnyOtherParticipantVoted,
+	});
 
-	if (noCardsOnTable && voteArrivalOrderRef.current.size > 0 && gatherDeck === null) {
-		voteArrivalOrderRef.current.clear();
-		nextVoteSeqRef.current = 0;
-	}
-
-	if (!selfHasVisibleTableActivity) {
-		voteArrivalOrderRef.current.delete(selfDisplayName);
-	}
-
-	for (const participant of participantsList) {
-		if (participant.hasVoted && !voteArrivalOrderRef.current.has(participant.displayName)) {
-			voteArrivalOrderRef.current.set(participant.displayName, nextVoteSeqRef.current);
-			nextVoteSeqRef.current += 1;
-		}
-	}
-
-	if (!isRevealed && selfVoteDisplay !== '' && !voteArrivalOrderRef.current.has(selfDisplayName)) {
-		voteArrivalOrderRef.current.set(selfDisplayName, nextVoteSeqRef.current);
-		nextVoteSeqRef.current += 1;
-	}
-
-	const voteArrivalOrderByDisplayName = voteArrivalOrderRef.current;
+	const voteArrivalOrderByDisplayName = new Map(
+		Object.entries(voteArrivalStore.getState().orderByDisplayName)
+	);
 
 	const participantDisplayNamesShownOnTable = new Set<string>();
 
@@ -243,11 +225,27 @@ export const VotingTable = memo(function VotingTable (
 	}, [otherParticipants]);
 
 	useEffect(() => {
-		const previousParticipants = prevParticipantsRef.current;
+		if (!isRevealed) {
+			return;
+		}
+
+		const hasVotes = _.some(
+			participantsList,
+			(participant) =>
+				participant.hasVoted || Boolean(participant.vote && participant.vote !== '')
+		);
+
+		if (hasVotes) {
+			revealedRoundParticipantsRef.current = _.cloneDeep(participantsList);
+		}
+	}, [isRevealed, participantsList]);
+
+	useEffect(() => {
+		const snapshotWhenRevealedWithVotes = revealedRoundParticipantsRef.current;
 		const previousIsRevealed = prevIsRevealedRef.current;
 
 		const votesExistedPreviously = _.some(
-			previousParticipants,
+			snapshotWhenRevealedWithVotes,
 			(participant) =>
 				participant.hasVoted || Boolean(participant.vote && participant.vote !== '')
 		);
@@ -263,14 +261,10 @@ export const VotingTable = memo(function VotingTable (
 			&& allVotesClearedNow;
 
 		if (resetFromRevealedRound && gatherDeck === null && !prefersReducedMotion) {
-			setGatherDeck({
-				phase: 'flip',
-				snapshotParticipants: _.cloneDeep(previousParticipants),
-				voteOrderMap: new Map(voteArrivalOrderBackupRef.current),
-			});
+			voteArrivalStore.getState().beginGatherDeck(_.cloneDeep(snapshotWhenRevealedWithVotes));
+			setGatherDeck({ phase: 'flip' });
 		}
 
-		prevParticipantsRef.current = participantsList;
 		prevIsRevealedRef.current = isRevealed;
 	}, [participantsList, isRevealed, gatherDeck, prefersReducedMotion]);
 
@@ -303,6 +297,7 @@ export const VotingTable = memo(function VotingTable (
 
 		if (phase === 'fade') {
 			const timerId = window.setTimeout(() => {
+				voteArrivalStore.getState().endGatherDeck();
 				setGatherDeck(null);
 			}, TABLE_DECK_FADE_DURATION_MS);
 
@@ -330,8 +325,6 @@ export const VotingTable = memo(function VotingTable (
 						? (
 							<div className="relative min-h-48 sm:min-h-52">
 								<TableDeckGatherOverlay
-									snapshotParticipants={gatherDeck.snapshotParticipants}
-									voteOrderByDisplayName={gatherDeck.voteOrderMap}
 									phase={gatherDeck.phase}
 									selfDisplayName={selfDisplayName}
 									prefersReducedMotion={prefersReducedMotion}
