@@ -317,23 +317,25 @@ export const RoomPage = () => {
 					</div>
 				</div>
 
-				<ParticipantList
-					setCurrentVote={setCurrentVote}
-					participants={room.participants}
-					isRevealed={room.isRevealed}
-				/>
+				<div className='flex flex-col gap-4'>
+					<ParticipantList
+						setCurrentVote={setCurrentVote}
+						participants={room.participants}
+						isRevealed={room.isRevealed}
+					/>
 
-				<VotingTable
-					selfDisplayName={session.displayName}
-					participants={room.participants}
-					isRevealed={room.isRevealed}
-					selfVoteDisplay={selfVoteDisplay}
-					hideSelfTableCard={hideSelfTableCard}
-					hideSelfTableParticipantLabel={hideSelfTableParticipantLabel}
-					selfSlotRef={tableSelfSlotWrapperRef}
-					selfCardRef={tableSelfCardContainerRef}
-					className="mb-8"
-				/>
+					<VotingTable
+						selfDisplayName={session.displayName}
+						participants={room.participants}
+						isRevealed={room.isRevealed}
+						selfVoteDisplay={selfVoteDisplay}
+						hideSelfTableCard={hideSelfTableCard}
+						hideSelfTableParticipantLabel={hideSelfTableParticipantLabel}
+						selfSlotRef={tableSelfSlotWrapperRef}
+						selfCardRef={tableSelfCardContainerRef}
+						className="mb-8"
+					/>
+				</div>
 
 			</div>
 			<VotingHand
