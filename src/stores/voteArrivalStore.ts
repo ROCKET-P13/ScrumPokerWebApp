@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { create } from 'zustand';
 
 import { Participant } from '@/types/Participant';
@@ -84,6 +85,14 @@ export const useVoteArrivalStore = create<VoteArrivalStore>((set, get) => ({
 				[selfDisplayName]: nextSeq,
 			};
 			nextSeq += 1;
+		}
+
+		const orderChanged = !_.isEqual(orderByDisplayName, previous.orderByDisplayName);
+		const seqChanged = nextSeq !== previous.nextSeq;
+		const backupChanged = !_.isEqual(backupOrderByDisplayName, previous.backupOrderByDisplayName);
+
+		if (!orderChanged && !seqChanged && !backupChanged) {
+			return;
 		}
 
 		set({

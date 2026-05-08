@@ -3,6 +3,8 @@ import _ from 'lodash';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
+import { VoteCardFlightDirection } from '@/Common/VoteCardFlightDirection';
+import { VotingCardSpectrumFlight } from '@/Common/VotingCardSpectrumFlight';
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
 import { VotingCard } from '@/Components/Voting/VotingCard';
 import { VotingHand } from '@/Components/Voting/VotingHand';
@@ -24,7 +26,7 @@ type FlightPayload = {
 	voteOptionValue: string;
 	sourceBoundingRect: DOMRect;
 	destinationBoundingRect: DOMRect;
-	direction: 'to-table' | 'to-hand';
+	direction: VoteCardFlightDirection;
 };
 
 type ActiveFlight = FlightPayload & { flightOverlayInstanceId: number };
@@ -106,18 +108,18 @@ export const RoomPage = () => {
 
 		for (const activeFlightRecord of activeFlights) {
 			liftDuringFlightForValues.push(activeFlightRecord.voteOptionValue);
-			if (activeFlightRecord.direction === 'to-hand') {
+			if (activeFlightRecord.direction === VoteCardFlightDirection.TO_HAND) {
 				anyToHand = true;
 			}
-			if (activeFlightRecord.direction === 'to-table') {
+			if (activeFlightRecord.direction === VoteCardFlightDirection.TO_TABLE) {
 				anyToTable = true;
 			}
 			if (
 				selfVoteDisplay !== ''
 				&& activeFlightRecord.voteOptionValue === selfVoteDisplay
 				&& (
-					activeFlightRecord.direction === 'to-hand'
-					|| activeFlightRecord.direction === 'to-table'
+					activeFlightRecord.direction === VoteCardFlightDirection.TO_HAND
+					|| activeFlightRecord.direction === VoteCardFlightDirection.TO_TABLE
 				)
 			) {
 				selfVoteInFlight = true;
@@ -155,7 +157,10 @@ export const RoomPage = () => {
 		const batchThatJustFinished = activeFlightBatchSnapshotRef.current;
 
 		flushSync(() => {
-			if (batchThatJustFinished.length === 1 && batchThatJustFinished[0].direction === 'to-hand') {
+			if (
+				batchThatJustFinished.length === 1
+				&& batchThatJustFinished[0].direction === VoteCardFlightDirection.TO_HAND
+			) {
 				setCurrentVote('');
 			}
 
@@ -238,7 +243,7 @@ export const RoomPage = () => {
 						voteOptionValue,
 						sourceBoundingRect: handReturnFlightBoundingRects.sourceBoundingRect,
 						destinationBoundingRect: handReturnFlightBoundingRects.destinationBoundingRect,
-						direction: 'to-hand',
+						direction: VoteCardFlightDirection.TO_HAND,
 					});
 
 					return true;
@@ -272,13 +277,13 @@ export const RoomPage = () => {
 								voteOptionValue: previousVoteValue,
 								sourceBoundingRect: returnToHandFlightBoundingRects.sourceBoundingRect,
 								destinationBoundingRect: returnToHandFlightBoundingRects.destinationBoundingRect,
-								direction: 'to-hand',
+								direction: VoteCardFlightDirection.TO_HAND,
 							},
 							{
 								voteOptionValue: newVoteValue,
 								sourceBoundingRect: placeOnTableFlightBoundingRects.sourceBoundingRect,
 								destinationBoundingRect: placeOnTableFlightBoundingRects.destinationBoundingRect,
-								direction: 'to-table',
+								direction: VoteCardFlightDirection.TO_TABLE,
 							},
 						]);
 					} else if (placeOnTableFlightBoundingRects) {
@@ -286,7 +291,7 @@ export const RoomPage = () => {
 							voteOptionValue: newVoteValue,
 							sourceBoundingRect: placeOnTableFlightBoundingRects.sourceBoundingRect,
 							destinationBoundingRect: placeOnTableFlightBoundingRects.destinationBoundingRect,
-							direction: 'to-table',
+							direction: VoteCardFlightDirection.TO_TABLE,
 						});
 					}
 
@@ -311,7 +316,7 @@ export const RoomPage = () => {
 					voteOptionValue: newVoteValue,
 					sourceBoundingRect: firstVoteTableFlightBoundingRects.sourceBoundingRect,
 					destinationBoundingRect: firstVoteTableFlightBoundingRects.destinationBoundingRect,
-					direction: 'to-table',
+					direction: VoteCardFlightDirection.TO_TABLE,
 				});
 
 				await sendVote({ vote: newVoteValue });
@@ -411,7 +416,9 @@ export const RoomPage = () => {
 								value={activeFlightRecord.voteOptionValue}
 								isSelected={false}
 								spectrumFlight={
-									activeFlightRecord.direction === 'to-table' ? 'to-selected' : 'to-default'
+									activeFlightRecord.direction === VoteCardFlightDirection.TO_TABLE
+										? VotingCardSpectrumFlight.TO_SELECTED
+										: VotingCardSpectrumFlight.TO_DEFAULT
 								}
 								disabled
 								tabIndex={-1}

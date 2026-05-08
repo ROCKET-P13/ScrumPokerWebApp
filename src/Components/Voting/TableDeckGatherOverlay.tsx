@@ -1,11 +1,16 @@
 import { motion } from 'framer-motion';
 import { memo, useEffect, useState } from 'react';
 
+import { GatherDeckPhase } from '@/Common/GatherDeckPhase';
 import { useVoteArrivalStore } from '@/stores/voteArrivalStore';
+import type { Participant } from '@/types/Participant';
 import { sortParticipantsByVoteArrival } from '@/utils/sortParticipantsByVoteArrival';
 import { TABLE_DECK_FADE_DURATION_MS, TABLE_DECK_STACK_DURATION_MS } from '@/utils/voteFlightGeometry';
 
 import { FlippableFaceDownVoteCard } from './FlippableFaceDownVoteCard';
+
+/** Stable fallback so `?? []` does not allocate a new array every render when snapshot is null. */
+const EMPTY_GATHER_SNAPSHOT_PARTICIPANTS: Participant[] = [];
 
 /** Approximate column pitch (card width + gap) for centering the stack */
 const CARD_STACK_PITCH_PX = 124;
@@ -21,7 +26,7 @@ function GatherFlippableCard ({
 	isExiting,
 }: {
 	revealedValue: string;
-	phase: 'flip' | 'stack' | 'fade';
+	phase: GatherDeckPhase;
 	prefersReducedMotion: boolean | null;
 	frontFaceSelected: boolean;
 	showOwnVoteFaceUpWhileFlip: boolean;
@@ -30,7 +35,7 @@ function GatherFlippableCard ({
 	const [faceUp, setFaceUp] = useState(() => !(prefersReducedMotion ?? false));
 
 	useEffect(() => {
-		if ((prefersReducedMotion ?? false) || phase !== 'flip') {
+		if ((prefersReducedMotion ?? false) || phase !== GatherDeckPhase.FLIP) {
 			return;
 		}
 
@@ -43,9 +48,9 @@ function GatherFlippableCard ({
 		};
 	}, [phase, prefersReducedMotion]);
 
-	const isRevealedOnCard = phase === 'flip' ? faceUp : false;
+	const isRevealedOnCard = phase === GatherDeckPhase.FLIP ? faceUp : false;
 
-	const showFrontFaceWhileConcealed = showOwnVoteFaceUpWhileFlip && phase === 'flip' && faceUp;
+	const showFrontFaceWhileConcealed = showOwnVoteFaceUpWhileFlip && phase === GatherDeckPhase.FLIP && faceUp;
 
 	return (
 		<FlippableFaceDownVoteCard
@@ -64,11 +69,12 @@ export const TableDeckGatherOverlay = memo(function TableDeckGatherOverlay ({
 	selfDisplayName,
 	prefersReducedMotion,
 }: {
-	phase: 'flip' | 'stack' | 'fade';
+	phase: GatherDeckPhase;
 	selfDisplayName: string;
 	prefersReducedMotion: boolean | null;
 }) {
-	const snapshotParticipants = useVoteArrivalStore((state) => state.gatherSnapshotParticipants) ?? [];
+	const snapshotParticipants = useVoteArrivalStore((state) => state.gatherSnapshotParticipants)
+		?? EMPTY_GATHER_SNAPSHOT_PARTICIPANTS;
 	const voteOrderRecord = useVoteArrivalStore((state) => state.gatherFrozenVoteOrderByDisplayName);
 	const voteOrderByDisplayName = new Map(Object.entries(voteOrderRecord ?? {}));
 
@@ -96,9 +102,9 @@ export const TableDeckGatherOverlay = memo(function TableDeckGatherOverlay ({
 					let layoutTransitionSeconds = 0;
 
 					if (!reduced) {
-						if (phase === 'flip') {
+						if (phase === GatherDeckPhase.FLIP) {
 							layoutTransitionSeconds = 0;
-						} else if (phase === 'stack') {
+						} else if (phase === GatherDeckPhase.STACK) {
 							layoutTransitionSeconds = TABLE_DECK_STACK_DURATION_MS / 1000;
 						} else {
 							layoutTransitionSeconds = TABLE_DECK_FADE_DURATION_MS / 1000;
@@ -108,15 +114,15 @@ export const TableDeckGatherOverlay = memo(function TableDeckGatherOverlay ({
 					const motionReducedTarget = {
 						x: 0,
 						y: 0,
-						opacity: phase === 'fade' ? 0 : 1,
-						scale: phase === 'fade' ? 0.88 : 1,
+						opacity: phase === GatherDeckPhase.FADE ? 0 : 1,
+						scale: phase === GatherDeckPhase.FADE ? 0.88 : 1,
 					};
 
 					const motionFullTarget = {
-						x: phase === 'flip' ? 0 : towardCenterPx,
-						y: phase === 'flip' ? 0 : stackLiftPx,
-						opacity: phase === 'fade' ? 0 : 1,
-						scale: phase === 'fade' ? 0.88 : 1,
+						x: phase === GatherDeckPhase.FLIP ? 0 : towardCenterPx,
+						y: phase === GatherDeckPhase.FLIP ? 0 : stackLiftPx,
+						opacity: phase === GatherDeckPhase.FADE ? 0 : 1,
+						scale: phase === GatherDeckPhase.FADE ? 0.88 : 1,
 					};
 
 					return (

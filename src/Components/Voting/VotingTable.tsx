@@ -2,7 +2,8 @@ import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import _ from 'lodash';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { voteArrivalStore } from '@/stores/voteArrivalStore';
+import { GatherDeckPhase } from '@/Common/GatherDeckPhase';
+import { useVoteArrivalStore, voteArrivalStore } from '@/stores/voteArrivalStore';
 import { Participant } from '@/types/Participant';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 import {
@@ -36,7 +37,7 @@ export interface VotingTableProps {
 }
 
 type GatherDeckState = {
-	phase: 'flip' | 'stack' | 'fade';
+	phase: GatherDeckPhase;
 };
 
 export const VotingTable = memo(function VotingTable (
@@ -180,20 +181,34 @@ export const VotingTable = memo(function VotingTable (
 
 	const selfHasVisibleTableActivity = Boolean(selfVoteDisplay !== '' || hideSelfTableCard);
 
-	voteArrivalStore.getState().syncTableTick({
-		participantsList: participants,
+	const orderByDisplayNameRecord = useVoteArrivalStore((state) => state.orderByDisplayName);
+
+	const voteArrivalOrderByDisplayName = useMemo(
+		() => new Map(Object.entries(orderByDisplayNameRecord)),
+		[orderByDisplayNameRecord]
+	);
+
+	useLayoutEffect(() => {
+		voteArrivalStore.getState().syncTableTick({
+			participantsList: participants,
+			selfDisplayName,
+			selfVoteDisplay,
+			isRevealed,
+			hideSelfTableCard,
+			gatherDeckIsNull: gatherDeck === null,
+			exitingForLayout,
+			hasAnyOtherParticipantVoted,
+		});
+	}, [
+		participants,
 		selfDisplayName,
 		selfVoteDisplay,
 		isRevealed,
 		hideSelfTableCard,
-		gatherDeckIsNull: gatherDeck === null,
+		gatherDeck,
 		exitingForLayout,
 		hasAnyOtherParticipantVoted,
-	});
-
-	const voteArrivalOrderByDisplayName = new Map(
-		Object.entries(voteArrivalStore.getState().orderByDisplayName)
-	);
+	]);
 
 	const participantDisplayNamesShownOnTable = useMemo(() => {
 		const names = new Set<string>();
@@ -254,7 +269,7 @@ export const VotingTable = memo(function VotingTable (
 
 		if (resetFromRevealedRound && gatherDeck === null && !prefersReducedMotion) {
 			voteArrivalStore.getState().beginGatherDeck(_.cloneDeep(snapshotWhenRevealedWithVotes));
-			setGatherDeck({ phase: 'flip' });
+			setGatherDeck({ phase: GatherDeckPhase.FLIP });
 		}
 
 		prevIsRevealedRef.current = isRevealed;
@@ -273,15 +288,15 @@ export const VotingTable = memo(function VotingTable (
 			return () => window.clearTimeout(timerId);
 		};
 
-		if (phase === 'flip') {
+		if (phase === GatherDeckPhase.FLIP) {
 			return advanceAfter(TABLE_CARD_FLIP_DURATION_MS, () => {
-				setGatherDeck((previous) => (previous ? { ...previous, phase: 'stack' } : null));
+				setGatherDeck((previous) => (previous ? { ...previous, phase: GatherDeckPhase.STACK } : null));
 			});
 		}
 
-		if (phase === 'stack') {
+		if (phase === GatherDeckPhase.STACK) {
 			return advanceAfter(TABLE_DECK_STACK_DURATION_MS, () => {
-				setGatherDeck((previous) => (previous ? { ...previous, phase: 'fade' } : null));
+				setGatherDeck((previous) => (previous ? { ...previous, phase: GatherDeckPhase.FADE } : null));
 			});
 		}
 

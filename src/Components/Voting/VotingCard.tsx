@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 
+import { VotingCardSpectrumFlight } from '@/Common/VotingCardSpectrumFlight';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
 export interface VotingCardProps extends Omit<
@@ -14,7 +15,7 @@ export interface VotingCardProps extends Omit<
 	 * Hand→table: animate from default fill to primary. Table→hand: animate from primary to default.
 	 * Used on flight overlay only; keep isSelected false when set.
 	 */
-	spectrumFlight?: 'to-selected' | 'to-default';
+	spectrumFlight?: VotingCardSpectrumFlight;
 }
 
 export const VotingCard = forwardRef<HTMLButtonElement, VotingCardProps>(
@@ -37,7 +38,7 @@ export const VotingCard = forwardRef<HTMLButtonElement, VotingCardProps>(
 
 		let toneClass = '';
 		if (spectrumMode) {
-			if (spectrumFlight === 'to-selected') {
+			if (spectrumFlight === VotingCardSpectrumFlight.TO_SELECTED) {
 				toneClass = `border-border bg-card text-card-foreground animate-voting-card-spectrum-to-selected`;
 			} else {
 				toneClass = `border-primary bg-primary text-primary-foreground animate-voting-card-spectrum-to-default`;

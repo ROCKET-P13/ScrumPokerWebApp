@@ -1,4 +1,5 @@
 import { WebSocketClient } from '@/API/WebSocketClient';
+import { RoomBroadcastEvent } from '@/Common/RoomBroadcastEvent';
 import { WebSocketRequestActions } from '@/Common/WebSocketRequestActions';
 import { Room } from '@/types/Room';
 import { RoomStateMessage } from '@/types/RoomStateMessage';
@@ -47,7 +48,7 @@ class RoomAPI {
 
 	subscribe (listener: (room: Room) => void): () => void {
 		return this.#webSocketClient.subscribe((data: RoomStateMessage) => {
-			if (data.event !== 'ROOM_STATE') {
+			if (data.event !== RoomBroadcastEvent.ROOM_STATE) {
 				return;
 			}
 			listener(data.payload);
