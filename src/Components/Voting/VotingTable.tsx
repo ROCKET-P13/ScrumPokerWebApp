@@ -5,6 +5,11 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'rea
 import { voteArrivalStore } from '@/stores/voteArrivalStore';
 import { Participant } from '@/types/Participant';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
+import {
+	participantsEveryVoteSignalCleared,
+	participantsHasVotedFlagMap,
+	participantsSomeHaveVoteSignal
+} from '@/utils/participantVoteSignals';
 import { sortParticipantsByVoteArrival } from '@/utils/sortParticipantsByVoteArrival';
 import {
 	TABLE_CARD_FLIP_DURATION_MS,
@@ -48,14 +53,13 @@ export const VotingTable = memo(function VotingTable (
 	}: VotingTableProps
 ) {
 	const prefersReducedMotion = useReducedMotion();
-	const participantsList = participants;
 
 	const otherParticipants = useMemo(
 		() => _.filter(
-			participantsList,
+			participants,
 			(participant) => participant.displayName !== selfDisplayName
 		),
-		[participantsList, selfDisplayName]
+		[participants, selfDisplayName]
 	);
 
 	const prevOthersHasVotedRef = useRef<Map<string, boolean>>(new Map());
@@ -70,25 +74,21 @@ export const VotingTable = memo(function VotingTable (
 	const hasAnyOtherParticipantVoted = otherParticipants.some((participant) => participant.hasVoted);
 
 	useEffect(() => {
-		const timeoutsMapRef = exitTimeoutsRef;
+		const pendingExitTimeouts = exitTimeoutsRef.current;
 
 		return () => {
-			const pending = timeoutsMapRef.current;
-
-			for (const exitTimeoutId of pending.values()) {
+			for (const exitTimeoutId of pendingExitTimeouts.values()) {
 				clearTimeout(exitTimeoutId);
 			}
 
-			pending.clear();
+			pendingExitTimeouts.clear();
 		};
 	}, []);
 
 	useEffect(() => {
 		if (skipParticipantTransitionEffectRef.current) {
 			skipParticipantTransitionEffectRef.current = false;
-			prevOthersHasVotedRef.current = new Map(
-				otherParticipants.map((participant) => [participant.displayName, participant.hasVoted])
-			);
+			prevOthersHasVotedRef.current = participantsHasVotedFlagMap(otherParticipants);
 
 			return;
 		}
@@ -149,9 +149,7 @@ export const VotingTable = memo(function VotingTable (
 			}
 		}
 
-		prevOthersHasVotedRef.current = new Map(
-			otherParticipants.map((participant) => [participant.displayName, participant.hasVoted])
-		);
+		prevOthersHasVotedRef.current = participantsHasVotedFlagMap(otherParticipants);
 	}, [otherParticipants]);
 
 	const exitingForLayout = useMemo(() => {
@@ -183,7 +181,7 @@ export const VotingTable = memo(function VotingTable (
 	const selfHasVisibleTableActivity = Boolean(selfVoteDisplay !== '' || hideSelfTableCard);
 
 	voteArrivalStore.getState().syncTableTick({
-		participantsList,
+		participantsList: participants,
 		selfDisplayName,
 		selfVoteDisplay,
 		isRevealed,
@@ -197,31 +195,39 @@ export const VotingTable = memo(function VotingTable (
 		Object.entries(voteArrivalStore.getState().orderByDisplayName)
 	);
 
-	const participantDisplayNamesShownOnTable = new Set<string>();
+	const participantDisplayNamesShownOnTable = useMemo(() => {
+		const names = new Set<string>();
 
-	for (const otherParticipant of otherParticipants) {
-		if (otherParticipant.hasVoted) {
-			participantDisplayNamesShownOnTable.add(otherParticipant.displayName);
+		for (const otherParticipant of otherParticipants) {
+			if (otherParticipant.hasVoted) {
+				names.add(otherParticipant.displayName);
+			}
 		}
-	}
 
-	for (const exitingParticipantDisplayName of exitingForLayout) {
-		participantDisplayNamesShownOnTable.add(exitingParticipantDisplayName);
-	}
+		for (const exitingParticipantDisplayName of exitingForLayout) {
+			names.add(exitingParticipantDisplayName);
+		}
 
-	if (!isRevealed && selfHasVisibleTableActivity) {
-		participantDisplayNamesShownOnTable.add(selfDisplayName);
-	}
+		if (!isRevealed && selfHasVisibleTableActivity) {
+			names.add(selfDisplayName);
+		}
+
+		return names;
+	}, [
+		otherParticipants,
+		exitingForLayout,
+		isRevealed,
+		selfHasVisibleTableActivity,
+		selfDisplayName,
+	]);
 
 	const tableRowParticipantsReveal = sortParticipantsByVoteArrival(
-		participantsList,
+		participants,
 		voteArrivalOrderByDisplayName
 	);
 
 	useLayoutEffect(() => {
-		voteSnapEndPrevCommitRef.current = new Map(
-			_.map(otherParticipants, (participant) => [participant.displayName, participant.hasVoted] as const)
-		);
+		voteSnapEndPrevCommitRef.current = participantsHasVotedFlagMap(otherParticipants);
 	}, [otherParticipants]);
 
 	useEffect(() => {
@@ -229,31 +235,17 @@ export const VotingTable = memo(function VotingTable (
 			return;
 		}
 
-		const hasVotes = _.some(
-			participantsList,
-			(participant) =>
-				participant.hasVoted || Boolean(participant.vote && participant.vote !== '')
-		);
-
-		if (hasVotes) {
-			revealedRoundParticipantsRef.current = _.cloneDeep(participantsList);
+		if (participantsSomeHaveVoteSignal(participants)) {
+			revealedRoundParticipantsRef.current = _.cloneDeep(participants);
 		}
-	}, [isRevealed, participantsList]);
+	}, [isRevealed, participants]);
 
 	useEffect(() => {
 		const snapshotWhenRevealedWithVotes = revealedRoundParticipantsRef.current;
 		const previousIsRevealed = prevIsRevealedRef.current;
 
-		const votesExistedPreviously = _.some(
-			snapshotWhenRevealedWithVotes,
-			(participant) =>
-				participant.hasVoted || Boolean(participant.vote && participant.vote !== '')
-		);
-
-		const allVotesClearedNow = _.every(
-			participantsList,
-			(participant) => !participant.hasVoted && !(participant.vote && participant.vote !== '')
-		);
+		const votesExistedPreviously = participantsSomeHaveVoteSignal(snapshotWhenRevealedWithVotes);
+		const allVotesClearedNow = participantsEveryVoteSignalCleared(participants);
 
 		const resetFromRevealedRound = previousIsRevealed === true
 			&& isRevealed === false
@@ -266,7 +258,7 @@ export const VotingTable = memo(function VotingTable (
 		}
 
 		prevIsRevealedRef.current = isRevealed;
-	}, [participantsList, isRevealed, gatherDeck, prefersReducedMotion]);
+	}, [participants, isRevealed, gatherDeck, prefersReducedMotion]);
 
 	useEffect(() => {
 		if (!gatherDeck || prefersReducedMotion) {
@@ -275,36 +267,28 @@ export const VotingTable = memo(function VotingTable (
 
 		const { phase } = gatherDeck;
 
-		if (phase === 'flip') {
-			const timerId = window.setTimeout(() => {
-				setGatherDeck((previous) => (previous ? { ...previous, phase: 'stack' } : null));
-			}, TABLE_CARD_FLIP_DURATION_MS);
+		const advanceAfter = (durationMs: number, advance: () => void) => {
+			const timerId = window.setTimeout(advance, durationMs);
 
-			return () => {
-				window.clearTimeout(timerId);
-			};
+			return () => window.clearTimeout(timerId);
+		};
+
+		if (phase === 'flip') {
+			return advanceAfter(TABLE_CARD_FLIP_DURATION_MS, () => {
+				setGatherDeck((previous) => (previous ? { ...previous, phase: 'stack' } : null));
+			});
 		}
 
 		if (phase === 'stack') {
-			const timerId = window.setTimeout(() => {
+			return advanceAfter(TABLE_DECK_STACK_DURATION_MS, () => {
 				setGatherDeck((previous) => (previous ? { ...previous, phase: 'fade' } : null));
-			}, TABLE_DECK_STACK_DURATION_MS);
-
-			return () => {
-				window.clearTimeout(timerId);
-			};
+			});
 		}
 
-		if (phase === 'fade') {
-			const timerId = window.setTimeout(() => {
-				voteArrivalStore.getState().endGatherDeck();
-				setGatherDeck(null);
-			}, TABLE_DECK_FADE_DURATION_MS);
-
-			return () => {
-				window.clearTimeout(timerId);
-			};
-		}
+		return advanceAfter(TABLE_DECK_FADE_DURATION_MS, () => {
+			voteArrivalStore.getState().endGatherDeck();
+			setGatherDeck(null);
+		});
 	}, [gatherDeck, prefersReducedMotion]);
 
 	return (
