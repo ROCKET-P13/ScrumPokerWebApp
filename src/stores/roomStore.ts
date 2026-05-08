@@ -73,7 +73,11 @@ export const roomStore = create<RoomStoreState>()(
 			name: 'scrum-poker-session',
 			partialize: (state) => ({
 				session: state.session,
-				room: state.room,
+			}),
+			merge: (persistedState, currentState) => ({
+				...currentState,
+				...(persistedState ?? {}),
+				room: currentState.room,
 			}),
 		}
 	)

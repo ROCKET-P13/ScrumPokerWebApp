@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
+import _ from 'lodash';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
@@ -66,7 +67,8 @@ export const RoomPage = () => {
 		}
 
 		if (room.isRevealed) {
-			const sessionParticipant = room.participants.find(
+			const sessionParticipant = _.find(
+				room.participants,
 				(participant) => participant.displayName === session.displayName
 			);
 
