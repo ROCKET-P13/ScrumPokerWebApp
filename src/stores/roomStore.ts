@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { Room } from '@/types/Room';
 
@@ -71,6 +71,7 @@ export const roomStore = create<RoomStoreState>()(
 		}),
 		{
 			name: 'scrum-poker-session',
+			storage: createJSONStorage(() => sessionStorage),
 			partialize: (state) => ({
 				session: state.session,
 			}),

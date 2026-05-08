@@ -7,7 +7,7 @@ export const VOTE_CARD_FLIGHT_DURATION_MS = 420;
 export const TABLE_CARD_FLIP_DURATION_MS = 770;
 
 /** After reveal-reset: gather columns into a pile, then fade */
-export const TABLE_DECK_STACK_DURATION_MS = 520;
+export const TABLE_DECK_STACK_DURATION_MS = 380;
 export const TABLE_DECK_FADE_DURATION_MS = 420;
 
 export const VOTE_CARD_FLIGHT_TRANSITION = {
