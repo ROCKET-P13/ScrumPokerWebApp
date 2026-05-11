@@ -1,9 +1,9 @@
 import { Participant } from '@/types/Participant';
 
-export function sortParticipantsByVoteArrival (
+export const sortParticipantsByVoteArrival = (
 	participants: Participant[],
 	voteArrivalOrderByDisplayName: ReadonlyMap<string, number>
-): Participant[] {
+): Participant[] => {
 	return [...participants].sort((leftParticipant, rightParticipant) => {
 		const leftOrderIndex = voteArrivalOrderByDisplayName.get(leftParticipant.displayName) ?? 9_999;
 		const rightOrderIndex = voteArrivalOrderByDisplayName.get(rightParticipant.displayName) ?? 9_999;
@@ -14,4 +14,4 @@ export function sortParticipantsByVoteArrival (
 
 		return leftParticipant.displayName.localeCompare(rightParticipant.displayName);
 	});
-}
+};

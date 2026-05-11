@@ -1,14 +1,10 @@
-import { motion } from 'framer-motion';
-import { memo, type CSSProperties, useEffect, useState } from 'react';
+import { memo, type CSSProperties, useEffect, useRef, useState } from 'react';
 
+import { useCard3DRotateY } from '@/hooks/animations';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
-import { TABLE_CARD_FLIP_DURATION_MS } from '@/utils/voteFlightGeometry';
 
 import { FaceDownCard } from './FaceDownCard';
 import { VotingCard } from './VotingCard';
-
-const FLIP_DURATION_SEC = TABLE_CARD_FLIP_DURATION_MS / 1000;
-const FLIP_EASE = [0.33, 1, 0.36, 1] as const;
 
 const facePlaneStyle: CSSProperties = {
 	backfaceVisibility: 'hidden',
@@ -22,6 +18,7 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 	prefersReducedMotion,
 	frontFaceSelected = false,
 	showFrontFaceWhileConcealed = false,
+	tableSlotSuppressedForFlight = false,
 }: {
 	isRevealed: boolean;
 	revealedValue: string;
@@ -30,12 +27,28 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 	frontFaceSelected?: boolean;
 	/** Your own vote: keep the value face-up while the round is still concealed. */
 	showFrontFaceWhileConcealed?: boolean;
+	/** While true, the table slot is hidden during the hand→table flight; used to replay face-down entrance when shown again. */
+	tableSlotSuppressedForFlight?: boolean;
 }) {
 	const reduced = Boolean(prefersReducedMotion);
 
 	const frontFaceRotationDegrees = isRevealed || showFrontFaceWhileConcealed ? 180 : 0;
 
 	const [frontFaceValue, setFrontFaceValue] = useState(revealedValue);
+	const [faceDownPlaneMountKey, setFaceDownPlaneMountKey] = useState(0);
+	const flipRootRef = useRef<HTMLDivElement>(null);
+	const previousTableSlotSuppressedRef = useRef(tableSlotSuppressedForFlight);
+
+	useEffect(() => {
+		const suppressed = tableSlotSuppressedForFlight;
+		const wasSuppressed = previousTableSlotSuppressedRef.current;
+
+		previousTableSlotSuppressedRef.current = suppressed;
+
+		if (wasSuppressed && !suppressed) {
+			setFaceDownPlaneMountKey((previousKey) => previousKey + 1);
+		}
+	}, [tableSlotSuppressedForFlight]);
 
 	useEffect(() => {
 		if (isRevealed || showFrontFaceWhileConcealed) {
@@ -49,21 +62,20 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 		}
 	};
 
+	useCard3DRotateY(flipRootRef, frontFaceRotationDegrees, {
+		reducedMotion: reduced,
+		onSettled: handleFlipAnimationComplete,
+	});
+
 	return (
 		<div className="w-full perspective-distant">
-			<motion.div
+			<div
+				ref={flipRootRef}
 				className="relative aspect-5/7 w-full"
 				style={{ transformStyle: 'preserve-3d' }}
-				initial={false}
-				animate={{ rotateY: frontFaceRotationDegrees }}
-				transition={
-					reduced
-						? { duration: 0 }
-						: { duration: FLIP_DURATION_SEC, ease: [...FLIP_EASE] }
-				}
-				onAnimationComplete={handleFlipAnimationComplete}
 			>
 				<div
+					key={faceDownPlaneMountKey}
 					className="absolute inset-0"
 					style={{ ...facePlaneStyle, transform: 'rotateY(0deg)' }}
 				>
@@ -90,7 +102,7 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 						className="h-full w-full shadow-md"
 					/>
 				</div>
-			</motion.div>
+			</div>
 		</div>
 	);
 });

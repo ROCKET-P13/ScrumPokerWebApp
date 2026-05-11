@@ -1,21 +1,15 @@
-import { motion, useReducedMotion } from 'framer-motion';
 import _ from 'lodash';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
 import { VoteCardFlightDirection } from '@/Common/VoteCardFlightDirection';
-import { VotingCardSpectrumFlight } from '@/Common/VotingCardSpectrumFlight';
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
-import { VotingCard } from '@/Components/Voting/VotingCard';
+import { VoteCardFlightOverlay } from '@/Components/Voting/VoteCardFlightOverlay';
 import { VotingHand } from '@/Components/Voting/VotingHand';
 import { VotingTable } from '@/Components/Voting/VotingTable';
+import { usePrefersReducedMotion } from '@/hooks/animations';
 import { useSendVote } from '@/hooks/useSendVote';
 import { roomStore } from '@/stores/roomStore';
-import {
-	getVoteCardFlightFixedLayerStyle,
-	getVoteCardFlightTranslationPixels,
-	VOTE_CARD_FLIGHT_TRANSITION
-} from '@/utils/voteFlightGeometry';
 
 type VoteFlightBoundingRects = {
 	sourceBoundingRect: DOMRect;
@@ -50,7 +44,7 @@ export const RoomPage = () => {
 	const flightBatchCompletedCountRef = useRef(0);
 	const prevSelfHadVoteRef = useRef<boolean | null>(null);
 
-	const prefersReducedMotionFromSystem = useReducedMotion();
+	const prefersReducedMotionFromSystem = usePrefersReducedMotion();
 
 	useEffect(() => {
 		if (!session.displayName) {
@@ -74,10 +68,6 @@ export const RoomPage = () => {
 
 		prevSelfHadVoteRef.current = hasVoteNow;
 	}, [room.participants, session.displayName, currentVote]);
-
-	const voteCardFlightTransition = prefersReducedMotionFromSystem
-		? { duration: 0 }
-		: VOTE_CARD_FLIGHT_TRANSITION;
 
 	const registerCardRef = useCallback((voteOptionValue: string, cardButtonElement: HTMLButtonElement | null) => {
 		if (cardButtonElement) {
@@ -392,41 +382,17 @@ export const RoomPage = () => {
 			/>
 
 			{
-				activeFlights.map((activeFlightRecord) => {
-					const { translationXPixels, translationYPixels } = getVoteCardFlightTranslationPixels(
-						activeFlightRecord.sourceBoundingRect,
-						activeFlightRecord.destinationBoundingRect
-					);
-
-					return (
-						<motion.div
-							key={activeFlightRecord.flightOverlayInstanceId}
-							layout={false}
-							className="pointer-events-none z-200"
-							style={getVoteCardFlightFixedLayerStyle(
-								activeFlightRecord.sourceBoundingRect,
-								activeFlightRecord.destinationBoundingRect
-							)}
-							initial={{ x: 0, y: 0 }}
-							animate={{ x: translationXPixels, y: translationYPixels }}
-							transition={voteCardFlightTransition}
-							onAnimationComplete={handleVoteFlightOverlayAnimationComplete}
-						>
-							<VotingCard
-								value={activeFlightRecord.voteOptionValue}
-								isSelected={false}
-								spectrumFlight={
-									activeFlightRecord.direction === VoteCardFlightDirection.TO_TABLE
-										? VotingCardSpectrumFlight.TO_SELECTED
-										: VotingCardSpectrumFlight.TO_DEFAULT
-								}
-								disabled
-								tabIndex={-1}
-								className="h-full w-full shadow-lg"
-							/>
-						</motion.div>
-					);
-				})
+				activeFlights.map((activeFlightRecord) => (
+					<VoteCardFlightOverlay
+						key={activeFlightRecord.flightOverlayInstanceId}
+						voteOptionValue={activeFlightRecord.voteOptionValue}
+						sourceBoundingRect={activeFlightRecord.sourceBoundingRect}
+						destinationBoundingRect={activeFlightRecord.destinationBoundingRect}
+						direction={activeFlightRecord.direction}
+						reducedMotion={Boolean(prefersReducedMotionFromSystem)}
+						onFlightComplete={handleVoteFlightOverlayAnimationComplete}
+					/>
+				))
 			}
 		</div>
 	);

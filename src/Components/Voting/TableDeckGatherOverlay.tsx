@@ -1,7 +1,7 @@
-import { motion } from 'framer-motion';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { GatherDeckPhase } from '@/Common/GatherDeckPhase';
+import { useTranslateOpacityScale, voteCardMotionEase } from '@/hooks/animations';
 import { useVoteArrivalStore } from '@/stores/voteArrivalStore';
 import type { Participant } from '@/types/Participant';
 import { sortParticipantsByVoteArrival } from '@/utils/sortParticipantsByVoteArrival';
@@ -14,8 +14,6 @@ const EMPTY_GATHER_SNAPSHOT_PARTICIPANTS: Participant[] = [];
 
 /** Approximate column pitch (card width + gap) for centering the stack */
 const CARD_STACK_PITCH_PX = 124;
-
-const STACK_EASE = [0.22, 1, 0.36, 1] as const;
 
 function GatherFlippableCard ({
 	revealedValue,
@@ -64,6 +62,70 @@ function GatherFlippableCard ({
 	);
 }
 
+/** Stack / fade column motion duration (ms) for gather overlay. */
+function gatherDeckColumnMotionDurationMs (phase: GatherDeckPhase, reduced: boolean): number {
+	if (reduced) {
+		return 0;
+	}
+
+	if (phase === GatherDeckPhase.FLIP) {
+		return 0;
+	}
+
+	if (phase === GatherDeckPhase.STACK) {
+		return TABLE_DECK_STACK_DURATION_MS;
+	}
+
+	return TABLE_DECK_FADE_DURATION_MS;
+}
+
+const GatherDeckAnimatedColumn = memo(function GatherDeckAnimatedColumn ({
+	phase,
+	reduced,
+	zIndex,
+	towardCenterPx,
+	stackLiftPx,
+	children,
+}: {
+	phase: GatherDeckPhase;
+	reduced: boolean;
+	zIndex: number;
+	towardCenterPx: number;
+	stackLiftPx: number;
+	children: ReactNode;
+}) {
+	const columnRootRef = useRef<HTMLDivElement>(null);
+
+	const motionTarget = useMemo(() => {
+		const stackActive = phase !== GatherDeckPhase.FLIP;
+
+		return {
+			x: stackActive ? towardCenterPx : 0,
+			y: stackActive ? stackLiftPx : 0,
+			opacity: phase === GatherDeckPhase.FADE ? 0 : 1,
+			scale: phase === GatherDeckPhase.FADE ? 0.88 : 1,
+		};
+	}, [phase, towardCenterPx, stackLiftPx]);
+
+	const durationMs = gatherDeckColumnMotionDurationMs(phase, reduced);
+
+	useTranslateOpacityScale(columnRootRef, motionTarget, {
+		durationMs,
+		ease: voteCardMotionEase,
+		reducedMotion: reduced,
+	});
+
+	return (
+		<div
+			ref={columnRootRef}
+			className="relative flex flex-col items-center gap-2"
+			style={{ zIndex }}
+		>
+			{children}
+		</div>
+	);
+});
+
 export const TableDeckGatherOverlay = memo(function TableDeckGatherOverlay ({
 	phase,
 	selfDisplayName,
@@ -99,43 +161,14 @@ export const TableDeckGatherOverlay = memo(function TableDeckGatherOverlay ({
 					const towardCenterPx = (midpointIndex - columnIndex) * CARD_STACK_PITCH_PX;
 					const stackLiftPx = columnIndex * 4;
 
-					let layoutTransitionSeconds = 0;
-
-					if (!reduced) {
-						if (phase === GatherDeckPhase.FLIP) {
-							layoutTransitionSeconds = 0;
-						} else if (phase === GatherDeckPhase.STACK) {
-							layoutTransitionSeconds = TABLE_DECK_STACK_DURATION_MS / 1000;
-						} else {
-							layoutTransitionSeconds = TABLE_DECK_FADE_DURATION_MS / 1000;
-						}
-					}
-
-					const motionReducedTarget = {
-						x: 0,
-						y: 0,
-						opacity: phase === GatherDeckPhase.FADE ? 0 : 1,
-						scale: phase === GatherDeckPhase.FADE ? 0.88 : 1,
-					};
-
-					const motionFullTarget = {
-						x: phase === GatherDeckPhase.FLIP ? 0 : towardCenterPx,
-						y: phase === GatherDeckPhase.FLIP ? 0 : stackLiftPx,
-						opacity: phase === GatherDeckPhase.FADE ? 0 : 1,
-						scale: phase === GatherDeckPhase.FADE ? 0.88 : 1,
-					};
-
 					return (
-						<motion.div
+						<GatherDeckAnimatedColumn
 							key={participant.displayName}
-							className="relative flex flex-col items-center gap-2"
-							style={{ zIndex: 10 + columnIndex }}
-							initial={false}
-							animate={reduced ? motionReducedTarget : motionFullTarget}
-							transition={{
-								duration: layoutTransitionSeconds,
-								ease: STACK_EASE,
-							}}
+							phase={phase}
+							reduced={reduced}
+							zIndex={10 + columnIndex}
+							towardCenterPx={towardCenterPx}
+							stackLiftPx={stackLiftPx}
 						>
 							<div className="flex min-h-42 w-24 items-end justify-center sm:min-h-46 sm:w-28">
 								<div className="w-full">
@@ -149,7 +182,7 @@ export const TableDeckGatherOverlay = memo(function TableDeckGatherOverlay ({
 									/>
 								</div>
 							</div>
-						</motion.div>
+						</GatherDeckAnimatedColumn>
 					);
 				})
 			}
