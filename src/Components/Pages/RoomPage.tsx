@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 
 import { VoteCardFlightDirection } from '@/Common/VoteCardFlightDirection';
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
@@ -24,6 +23,15 @@ type FlightPayload = {
 };
 
 type ActiveFlight = FlightPayload & { flightOverlayInstanceId: number };
+
+const afterNextPaint = (): Promise<void> =>
+	new Promise((resolve) => {
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				resolve();
+			});
+		});
+	});
 
 export const RoomPage = () => {
 	const session = roomStore((storeSnapshot) => storeSnapshot.session);
@@ -146,16 +154,14 @@ export const RoomPage = () => {
 
 		const batchThatJustFinished = activeFlightBatchSnapshotRef.current;
 
-		flushSync(() => {
-			if (
-				batchThatJustFinished.length === 1
-				&& batchThatJustFinished[0].direction === VoteCardFlightDirection.TO_HAND
-			) {
-				setCurrentVote('');
-			}
+		if (
+			batchThatJustFinished.length === 1
+			&& batchThatJustFinished[0].direction === VoteCardFlightDirection.TO_HAND
+		) {
+			setCurrentVote('');
+		}
 
-			setActiveFlights([]);
-		});
+		setActiveFlights([]);
 
 		flightCompletionPromiseResolveRef.current?.();
 		flightCompletionPromiseResolveRef.current = null;
@@ -217,9 +223,7 @@ export const RoomPage = () => {
 			}
 
 			voteInteractionLockedRef.current = true;
-			flushSync(() => {
-				setVoteInteractionLocked(true);
-			});
+			setVoteInteractionLocked(true);
 
 			try {
 				const runReturnToHandFlightIfPossible = async (voteOptionValue: string): Promise<boolean> => {
@@ -255,9 +259,8 @@ export const RoomPage = () => {
 					const previousVoteValue = currentVote;
 					const returnToHandFlightBoundingRects = measureFlightBoundingRectsToHand(previousVoteValue);
 
-					flushSync(() => {
-						setCurrentVote(newVoteValue);
-					});
+					setCurrentVote(newVoteValue);
+					await afterNextPaint();
 
 					const placeOnTableFlightBoundingRects = measureFlightBoundingRectsToTable(newVoteValue);
 
@@ -290,9 +293,8 @@ export const RoomPage = () => {
 					return newVoteValue;
 				}
 
-				flushSync(() => {
-					setCurrentVote(newVoteValue);
-				});
+				setCurrentVote(newVoteValue);
+				await afterNextPaint();
 
 				const firstVoteTableFlightBoundingRects = measureFlightBoundingRectsToTable(newVoteValue);
 

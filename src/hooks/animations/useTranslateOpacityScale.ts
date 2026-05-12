@@ -49,7 +49,7 @@ export const useTranslateOpacityScale = (
 
 		if (reducedMotion || durationMs <= 0) {
 			element.style.opacity = String(target.opacity);
-			element.style.transform = `translate(${target.x}px, ${target.y}px) scale(${target.scale})`;
+			element.style.transform = `translate3d(${target.x}px, ${target.y}px, 0) scale(${target.scale})`;
 
 			return () => {
 				finishActiveAnimationPreserveEndState();

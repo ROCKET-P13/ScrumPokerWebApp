@@ -26,6 +26,9 @@ export const getVoteCardFlightFixedLayerStyle = (
 		+ (sourceBoundingRect.height - destinationBoundingRect.height) / 2,
 	width: destinationBoundingRect.width,
 	height: destinationBoundingRect.height,
+	isolation: 'isolate',
+	willChange: 'transform',
+	transform: 'translateZ(0)',
 });
 
 export const getVoteCardFlightTranslationPixels = (

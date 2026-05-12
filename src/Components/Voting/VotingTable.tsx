@@ -247,14 +247,12 @@ export const VotingTable = memo(function VotingTable (
 			participantOrderKeys: tableRowParticipantsReveal.map((participant) => participant.displayName),
 			shownKeysSorted: [...participantDisplayNamesShownOnTable].sort(),
 			isRevealed,
-			selfVoteDisplay,
 			exitingKeysSorted: [...exitingForLayout].sort(),
 		}),
 		[
 			tableRowParticipantsReveal,
 			participantDisplayNamesShownOnTable,
 			isRevealed,
-			selfVoteDisplay,
 			exitingForLayout,
 		]
 	);
@@ -338,7 +336,7 @@ export const VotingTable = memo(function VotingTable (
 		<div
 			className={
 				mergeTailwindClasses(
-					`rounded-xl border border-border/80 bg-muted/20 px-4 py-6 backdrop-blur-xs`,
+					'rounded-xl border border-border/80 bg-muted/20 px-4 py-6',
 					className
 				)
 			}

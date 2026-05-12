@@ -88,8 +88,10 @@ export const VotingHand = memo(function VotingHand (
 									}}
 									className={
 										mergeTailwindClasses(
-											`relative shrink-0 ease-out motion-reduce:transition-none`,
-											suppressHandLiftTransition ? 'transition-none' : 'transition-all duration-300',
+											'relative shrink-0 ease-out motion-reduce:transition-none',
+											suppressHandLiftTransition
+												? 'transition-none'
+												: 'transition-transform duration-300',
 											liftOrHoverClass,
 											index !== 0 ? 'max-sm:-ml-6 -ml-8 sm:-ml-8' : ''
 										)
