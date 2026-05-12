@@ -4,6 +4,6 @@ import { roomAPI } from '@/API/RoomAPI';
 
 export const useCreateRoom = () => {
 	return useMutation({
-		mutationFn: ({ displayName }: { displayName: string }) => roomAPI.create({ displayName }),
+		mutationFn: ({ displayName, isPlayer }: { displayName: string, isPlayer: boolean }) => roomAPI.create({ displayName, isPlayer }),
 	});
 };

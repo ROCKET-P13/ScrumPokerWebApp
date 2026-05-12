@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@ui/Button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@ui/Card';
 import { Input } from '@ui/Input';
+import { Switch } from '@ui/Switch';
 import { useState } from 'react';
 
 import { Routes } from '@/Common/Routes';
@@ -11,6 +12,7 @@ import { roomStore } from '@/stores/roomStore';
 export const StartRoomPage = () => {
 	const navigate = useNavigate();
 	const [name, setName] = useState('');
+	const [isPlayer, setIsPlayer] = useState(false);
 
 	const setSession = roomStore((state) => state.setSession);
 	const setRoomState = roomStore((state) => state.setRoomState);
@@ -18,11 +20,15 @@ export const StartRoomPage = () => {
 	const { mutateAsync: createRoom } = useCreateRoom();
 
 	const handleSubmit = async () => {
-		const res = await createRoom({ displayName: name });
+		const res = await createRoom({
+			displayName: name,
+			isPlayer,
+		});
 		setSession({
 			roomCode: res.roomCode,
 			displayName: name,
 			isRoomAdmin: true,
+			isPlayer,
 			vote: '',
 		});
 		setRoomState(res);
@@ -44,11 +50,18 @@ export const StartRoomPage = () => {
 				<CardContent>
 					<div className='flex flex-col gap-4'>
 						<Input
-							label='Room Name'
+							label='Display Name'
 							placeholder='Display name'
 							value={name}
 							onChange={(e) => {
 								setName(e.target.value);
+							}}
+						/>
+						<Switch
+							checked={isPlayer}
+							label='Participate in voting'
+							onChange={(isPlayer) => {
+								setIsPlayer(isPlayer);
 							}}
 						/>
 					</div>
@@ -60,7 +73,7 @@ export const StartRoomPage = () => {
 							navigate({ to: Routes.HOME });
 						}}
 					>
-							Back
+						Back
 					</Button>
 					<Button
 						onClick={handleSubmit}

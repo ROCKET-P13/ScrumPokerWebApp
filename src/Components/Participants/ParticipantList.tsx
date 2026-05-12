@@ -27,7 +27,10 @@ export const ParticipantList = (
 
 	const revealVotesButtonIsDisabled = useMemo(
 		() => {
-			return room.isRevealed || !_.every(room.participants, 'hasVoted');
+			const playingParticipants = _.filter(room.participants, 'isPlayer');
+			return room.isRevealed
+				|| _.isEmpty(playingParticipants)
+				|| !_.every(playingParticipants, 'hasVoted');
 		},
 		[room.isRevealed, room.participants]
 	);

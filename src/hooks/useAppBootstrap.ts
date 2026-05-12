@@ -18,6 +18,7 @@ export const useAppBootstrap = () => {
 	const roomCode = session.roomCode;
 	const displayName = session.displayName;
 	const isRoomAdmin = session.isRoomAdmin;
+	const isPlayer = session.isPlayer;
 
 	useEffect(() => {
 		return roomAPI.subscribe((room) => {
@@ -47,6 +48,7 @@ export const useAppBootstrap = () => {
 					roomCode,
 					displayName,
 					isRoomAdmin,
+					isPlayer,
 				});
 				if (cancelled) {
 					return;
@@ -64,5 +66,5 @@ export const useAppBootstrap = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [pathname, roomCode, displayName, isRoomAdmin, join, setRoomState, clearSession]);
+	}, [pathname, roomCode, displayName, isRoomAdmin, join, setRoomState, clearSession, isPlayer]);
 };
