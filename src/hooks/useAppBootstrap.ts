@@ -1,3 +1,4 @@
+import { useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
 import { roomAPI } from '@/API/RoomAPI';
@@ -11,6 +12,8 @@ export const useAppBootstrap = () => {
 	const clearSession = roomStore((s) => s.clearSession);
 
 	const { mutateAsync: join } = useJoinRoom();
+
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
 
 	const roomCode = session.roomCode;
 	const displayName = session.displayName;
@@ -32,7 +35,7 @@ export const useAppBootstrap = () => {
 			return;
 		}
 
-		if (window.location.pathname !== `${Routes.ROOM}/${roomCode}`) {
+		if (pathname !== `${Routes.ROOM}/${roomCode}`) {
 			return;
 		}
 
@@ -61,5 +64,5 @@ export const useAppBootstrap = () => {
 		return () => {
 			cancelled = true;
 		};
-	}, [roomCode, displayName, isRoomAdmin, join, setRoomState, clearSession]);
+	}, [pathname, roomCode, displayName, isRoomAdmin, join, setRoomState, clearSession]);
 };
