@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 
 import { VoteCardFlightDirection } from '@/Common/VoteCardFlightDirection';
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
@@ -24,15 +25,6 @@ type FlightPayload = {
 
 type ActiveFlight = FlightPayload & { flightOverlayInstanceId: number };
 
-const afterNextPaint = (): Promise<void> =>
-	new Promise((resolve) => {
-		requestAnimationFrame(() => {
-			requestAnimationFrame(() => {
-				resolve();
-			});
-		});
-	});
-
 export const RoomPage = () => {
 	const session = roomStore((storeSnapshot) => storeSnapshot.session);
 	const room = roomStore((storeSnapshot) => storeSnapshot.room);
@@ -40,6 +32,8 @@ export const RoomPage = () => {
 	const [currentVote, setCurrentVote] = useState('');
 	const [activeFlights, setActiveFlights] = useState<ActiveFlight[]>([]);
 	const [voteInteractionLocked, setVoteInteractionLocked] = useState(false);
+	/** Hides the self table slot between committing `currentVote` and mounting flight overlays (avoids a one-frame flash). */
+	const [suppressSelfTableForVoteFlight, setSuppressSelfTableForVoteFlight] = useState(false);
 
 	const voteInteractionLockedRef = useRef(false);
 	const handCardButtonElementsByVoteValueRef = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -259,8 +253,10 @@ export const RoomPage = () => {
 					const previousVoteValue = currentVote;
 					const returnToHandFlightBoundingRects = measureFlightBoundingRectsToHand(previousVoteValue);
 
-					setCurrentVote(newVoteValue);
-					await afterNextPaint();
+					flushSync(() => {
+						setSuppressSelfTableForVoteFlight(true);
+						setCurrentVote(newVoteValue);
+					});
 
 					const placeOnTableFlightBoundingRects = measureFlightBoundingRectsToTable(newVoteValue);
 
@@ -293,8 +289,10 @@ export const RoomPage = () => {
 					return newVoteValue;
 				}
 
-				setCurrentVote(newVoteValue);
-				await afterNextPaint();
+				flushSync(() => {
+					setSuppressSelfTableForVoteFlight(true);
+					setCurrentVote(newVoteValue);
+				});
 
 				const firstVoteTableFlightBoundingRects = measureFlightBoundingRectsToTable(newVoteValue);
 
@@ -317,6 +315,7 @@ export const RoomPage = () => {
 			} finally {
 				voteInteractionLockedRef.current = false;
 				setVoteInteractionLocked(false);
+				setSuppressSelfTableForVoteFlight(false);
 			}
 		},
 		[
@@ -364,7 +363,7 @@ export const RoomPage = () => {
 						participants={_.filter(room.participants, 'isPlayer')}
 						isRevealed={room.isRevealed}
 						selfVoteDisplay={selfVoteDisplay}
-						hideSelfTableCard={activeFlightUi.hideSelfTableCard}
+						hideSelfTableCard={activeFlightUi.hideSelfTableCard || suppressSelfTableForVoteFlight}
 						hideSelfTableParticipantLabel={activeFlightUi.hideSelfTableParticipantLabel}
 						selfSlotRef={tableSelfSlotWrapperRef}
 						selfCardRef={tableSelfCardContainerRef}
