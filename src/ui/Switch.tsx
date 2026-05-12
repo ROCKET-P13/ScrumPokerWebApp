@@ -45,7 +45,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
 					onClick={toggle}
 					className={
 						mergeTailwindClasses(
-							'inline-flex shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors focus:outline-none',
+							'inline-flex shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none',
 							checked ? 'bg-primary' : 'bg-muted',
 							disabled ? 'opacity-50 cursor-not-allowed' : '',
 							className
@@ -56,8 +56,8 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
 					<span
 						className={
 							mergeTailwindClasses(
-								'inline-block h-5 w-5 rounded-full bg-background shadow transform ring-0 transition-transform',
-								checked ? 'translate-x-5' : 'translate-x-0'
+								'inline-block h-5 w-5 rounded-full bg-background shadow transform ring-0 transition-transform duration-200',
+								checked ? 'translate-x-5 bg-foreground' : 'translate-x-0'
 							)
 						}
 					/>
