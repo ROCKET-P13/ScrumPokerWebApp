@@ -48,6 +48,7 @@ function revertAndClearColumnTransforms (
 	for (const columnElement of columnElements) {
 		if (columnElement instanceof HTMLElement) {
 			columnElement.style.transform = '';
+			columnElement.style.willChange = '';
 		}
 	}
 }
@@ -107,6 +108,12 @@ export const useFlipColumnLayout = (
 
 		activeByKeyRef.current.clear();
 
+		for (const columnElement of Array.from(containerElement.querySelectorAll(COLUMN_SELECTOR))) {
+			if (columnElement instanceof HTMLElement) {
+				columnElement.style.willChange = '';
+			}
+		}
+
 		const previousRectsByKey = previousRectsByKeyRef.current;
 		const nextSnapshot = new Map<string, DOMRect>();
 
@@ -125,7 +132,8 @@ export const useFlipColumnLayout = (
 				const deltaY = previousRect.top - currentRect.top;
 
 				if (Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
-					columnElement.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+					columnElement.style.willChange = 'transform';
+					columnElement.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0)`;
 
 					const activeAnimation = animate(columnElement, {
 						x: 0,
@@ -134,6 +142,7 @@ export const useFlipColumnLayout = (
 						ease: voteCardMotionEase,
 						onComplete: () => {
 							columnElement.style.transform = '';
+							columnElement.style.willChange = '';
 							activeByKeyRef.current.delete(columnKey);
 						},
 					});
