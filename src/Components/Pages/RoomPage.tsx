@@ -148,14 +148,17 @@ export const RoomPage = () => {
 
 		const batchThatJustFinished = activeFlightBatchSnapshotRef.current;
 
-		if (
-			batchThatJustFinished.length === 1
-			&& batchThatJustFinished[0].direction === VoteCardFlightDirection.TO_HAND
-		) {
-			setCurrentVote('');
-		}
+		flushSync(() => {
+			if (
+				batchThatJustFinished.length === 1
+				&& batchThatJustFinished[0].direction === VoteCardFlightDirection.TO_HAND
+			) {
+				setCurrentVote('');
+			}
 
-		setActiveFlights([]);
+			setActiveFlights([]);
+			setSuppressSelfTableForVoteFlight(false);
+		});
 
 		flightCompletionPromiseResolveRef.current?.();
 		flightCompletionPromiseResolveRef.current = null;
