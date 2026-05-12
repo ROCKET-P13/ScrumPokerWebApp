@@ -24,12 +24,14 @@ export const JoinRoomPage = () => {
 			roomCode,
 			displayName: name,
 			isRoomAdmin: false,
+			isPlayer: true,
 		});
 		setSession({
 			roomCode,
 			displayName: name,
 			isRoomAdmin: false,
 			vote: '',
+			isPlayer: true,
 		});
 
 		setRoomState(room);

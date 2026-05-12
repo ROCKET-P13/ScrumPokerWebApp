@@ -3,4 +3,5 @@ export type Participant = {
 	hasVoted: boolean;
 	isRoomAdmin: boolean;
 	vote?: string;
+	isPlayer: boolean;
 }

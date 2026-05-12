@@ -359,7 +359,7 @@ export const RoomPage = () => {
 
 					<VotingTable
 						selfDisplayName={session.displayName}
-						participants={room.participants}
+						participants={_.filter(room.participants, 'isPlayer')}
 						isRevealed={room.isRevealed}
 						selfVoteDisplay={selfVoteDisplay}
 						hideSelfTableCard={activeFlightUi.hideSelfTableCard}
@@ -371,15 +371,18 @@ export const RoomPage = () => {
 				</div>
 
 			</div>
-			<VotingHand
-				currentVote={currentVote}
-				disabled={room.isRevealed}
-				interactionLocked={voteInteractionLocked}
-				suppressHandLiftTransition={suppressHandLiftTransition}
-				liftDuringFlightForValues={activeFlightUi.liftDuringFlightForValues}
-				onSelect={selectVote}
-				registerCardRef={registerCardRef}
-			/>
+
+			{
+				session.isPlayer && <VotingHand
+					currentVote={currentVote}
+					disabled={room.isRevealed}
+					interactionLocked={voteInteractionLocked}
+					suppressHandLiftTransition={suppressHandLiftTransition}
+					liftDuringFlightForValues={activeFlightUi.liftDuringFlightForValues}
+					onSelect={selectVote}
+					registerCardRef={registerCardRef}
+				/>
+			}
 
 			{
 				activeFlights.map((activeFlightRecord) => (

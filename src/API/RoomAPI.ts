@@ -10,12 +10,14 @@ interface RoomAPIConstructorParams {
 
 interface CreateRoomParams {
 	displayName: string;
+	isPlayer: boolean;
 }
 
 export interface JoinRoomParams {
 	roomCode: string;
 	displayName: string;
 	isRoomAdmin: boolean
+	isPlayer: boolean;
 }
 
 class RoomAPI {
@@ -26,12 +28,12 @@ class RoomAPI {
 		this.#webSocketClient.connect();
 	}
 
-	async create ({ displayName }: CreateRoomParams): Promise<Room> {
-		return await this.#webSocketClient.send(WebSocketRequestActions.CREATE_ROOM, { displayName });
+	async create ({ displayName, isPlayer }: CreateRoomParams): Promise<Room> {
+		return await this.#webSocketClient.send(WebSocketRequestActions.CREATE_ROOM, { displayName, isPlayer });
 	}
 
-	async join ({ roomCode, displayName, isRoomAdmin }: JoinRoomParams): Promise<Room> {
-		return await this.#webSocketClient.send(WebSocketRequestActions.JOIN_ROOM, { roomCode, displayName, isRoomAdmin });
+	async join ({ roomCode, displayName, isRoomAdmin, isPlayer }: JoinRoomParams): Promise<Room> {
+		return await this.#webSocketClient.send(WebSocketRequestActions.JOIN_ROOM, { roomCode, displayName, isRoomAdmin, isPlayer });
 	}
 
 	async sendVote ({ vote }: { vote: string }): Promise<Room> {
