@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createRootRoute, createRoute, createRouter, Outlet, RouterProvider } from '@tanstack/react-router';
+import { createHashHistory, createRootRoute, createRoute, createRouter, Outlet, RouterProvider } from '@tanstack/react-router';
 
 import { Routes } from '@/Common/Routes';
 import { JoinRoomPage } from '@/Components/Pages/JoinRoomPage';
@@ -51,6 +51,7 @@ const routeTree = rootRoute.addChildren([
 ]);
 
 const router = createRouter({
+	history: createHashHistory(),
 	routeTree,
 	defaultPreload: 'intent',
 	defaultPreloadStaleTime: 0,
