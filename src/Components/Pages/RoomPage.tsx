@@ -345,8 +345,14 @@ export const RoomPage = () => {
 	}
 
 	return (
-		<div className="relative min-h-svh">
-			<div className="mx-auto max-w-5xl px-4 pb-72 pt-8 sm:pb-80">
+		<div className="relative">
+			<div
+				className={
+					session.isPlayer
+						? 'mx-auto max-w-5xl px-4 pb-80 pt-8'
+						: 'mx-auto max-w-5xl px-4 pb-8 pt-8'
+				}
+			>
 				<div className="mb-8 flex flex-col items-center justify-center text-center">
 					<h1 className="text-2xl font-semibold tracking-tight text-foreground">Scrum Poker</h1>
 					<div className="mt-1 flex flex-row gap-1 text-sm text-muted-foreground">
@@ -370,7 +376,6 @@ export const RoomPage = () => {
 						hideSelfTableParticipantLabel={activeFlightUi.hideSelfTableParticipantLabel}
 						selfSlotRef={tableSelfSlotWrapperRef}
 						selfCardRef={tableSelfCardContainerRef}
-						className="mb-8"
 					/>
 				</div>
 
