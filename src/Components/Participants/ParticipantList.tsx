@@ -42,11 +42,11 @@ export const ParticipantList = (
 	return (
 		<Card className="h-full">
 			<CardHeader className="px-6">
-				<div className='flex flex-row justify-between'>
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 					<CardTitle className="text-base">Participants</CardTitle>
 					{
 						session.isRoomAdmin && (
-							<div className="space-x-4">
+							<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-4">
 								<Button
 									disabled={!room.isRevealed}
 									onClick={handleResetRound}
