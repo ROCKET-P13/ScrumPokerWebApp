@@ -2,7 +2,7 @@ import { memo } from 'react';
 
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
-export const FaceDownCard = memo(function FaceDownCard ({ className = '' }: { className?: string }) {
+export const FaceDownCard = memo(({ className = '' }: { className?: string }) => {
 	return (
 		<div
 			className={
@@ -26,3 +26,5 @@ export const FaceDownCard = memo(function FaceDownCard ({ className = '' }: { cl
 		</div>
 	);
 });
+
+FaceDownCard.displayName = 'FaceDownCard';

@@ -15,7 +15,7 @@ const EMPTY_GATHER_SNAPSHOT_PARTICIPANTS: Participant[] = [];
 /** Approximate column pitch (card width + gap) for centering the stack */
 const CARD_STACK_PITCH_PX = 124;
 
-function GatherFlippableCard ({
+const GatherFlippableCard = ({
 	revealedValue,
 	phase,
 	prefersReducedMotion,
@@ -29,7 +29,7 @@ function GatherFlippableCard ({
 	frontFaceSelected: boolean;
 	showOwnVoteFaceUpWhileFlip: boolean;
 	isExiting: boolean;
-}) {
+}) => {
 	const [faceUp, setFaceUp] = useState(() => !(prefersReducedMotion ?? false));
 
 	useEffect(() => {
@@ -60,10 +60,10 @@ function GatherFlippableCard ({
 			showFrontFaceWhileConcealed={showFrontFaceWhileConcealed}
 		/>
 	);
-}
+};
 
 /** Stack / fade column motion duration (ms) for gather overlay. */
-function gatherDeckColumnMotionDurationMs (phase: GatherDeckPhase, reduced: boolean): number {
+const gatherDeckColumnMotionDurationMs = (phase: GatherDeckPhase, reduced: boolean): number => {
 	if (reduced) {
 		return 0;
 	}
@@ -77,9 +77,9 @@ function gatherDeckColumnMotionDurationMs (phase: GatherDeckPhase, reduced: bool
 	}
 
 	return TABLE_DECK_FADE_DURATION_MS;
-}
+};
 
-const GatherDeckAnimatedColumn = memo(function GatherDeckAnimatedColumn ({
+const GatherDeckAnimatedColumn = memo(({
 	phase,
 	reduced,
 	zIndex,
@@ -93,7 +93,7 @@ const GatherDeckAnimatedColumn = memo(function GatherDeckAnimatedColumn ({
 	towardCenterPx: number;
 	stackLiftPx: number;
 	children: ReactNode;
-}) {
+}) => {
 	const columnRootRef = useRef<HTMLDivElement>(null);
 
 	const motionTarget = useMemo(() => {
@@ -126,7 +126,9 @@ const GatherDeckAnimatedColumn = memo(function GatherDeckAnimatedColumn ({
 	);
 });
 
-export const TableDeckGatherOverlay = memo(function TableDeckGatherOverlay ({
+GatherDeckAnimatedColumn.displayName = 'GatherDeckAnimatedColumn';
+
+export const TableDeckGatherOverlay = memo(({
 	phase,
 	selfDisplayName,
 	prefersReducedMotion,
@@ -134,7 +136,7 @@ export const TableDeckGatherOverlay = memo(function TableDeckGatherOverlay ({
 	phase: GatherDeckPhase;
 	selfDisplayName: string;
 	prefersReducedMotion: boolean | null;
-}) {
+}) => {
 	const snapshotParticipants = useVoteArrivalStore((state) => state.gatherSnapshotParticipants)
 		?? EMPTY_GATHER_SNAPSHOT_PARTICIPANTS;
 	const voteOrderRecord = useVoteArrivalStore((state) => state.gatherFrozenVoteOrderByDisplayName);
@@ -189,3 +191,5 @@ export const TableDeckGatherOverlay = memo(function TableDeckGatherOverlay ({
 		</div>
 	);
 });
+
+TableDeckGatherOverlay.displayName = 'TableDeckGatherOverlay';

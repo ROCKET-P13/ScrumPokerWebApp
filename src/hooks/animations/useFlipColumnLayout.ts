@@ -8,15 +8,15 @@ import { voteCardMotionEase } from './animeEasing';
 
 const COLUMN_SELECTOR = '[data-table-flip-column]';
 
-function readColumnKey (element: Element): string | null {
+const readColumnKey = (element: Element): string | null => {
 	return element.getAttribute('data-table-flip-column');
-}
+};
 
-function cloneRect (rect: DOMRect): DOMRect {
+const cloneRect = (rect: DOMRect): DOMRect => {
 	return new DOMRect(rect.x, rect.y, rect.width, rect.height);
-}
+};
 
-function collectColumnRectSnapshot (containerElement: HTMLElement): Map<string, DOMRect> {
+const collectColumnRectSnapshot = (containerElement: HTMLElement): Map<string, DOMRect> => {
 	const snapshot = new Map<string, DOMRect>();
 	const columnElements = Array.from(containerElement.querySelectorAll(COLUMN_SELECTOR));
 
@@ -31,12 +31,12 @@ function collectColumnRectSnapshot (containerElement: HTMLElement): Map<string, 
 	}
 
 	return snapshot;
-}
+};
 
-function revertAndClearColumnTransforms (
+const revertAndClearColumnTransforms = (
 	activeByKeyRef: MutableRefObject<Map<string, JSAnimation>>,
 	containerElement: HTMLElement
-): void {
+): void => {
 	for (const activeAnimation of activeByKeyRef.current.values()) {
 		activeAnimation.revert();
 	}
@@ -51,7 +51,7 @@ function revertAndClearColumnTransforms (
 			columnElement.style.willChange = '';
 		}
 	}
-}
+};
 
 /**
  * FLIP translation for flex-reordered table columns (replaces Framer `layout="position"`).

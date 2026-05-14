@@ -11,7 +11,7 @@ const facePlaneStyle: CSSProperties = {
 	WebkitBackfaceVisibility: 'hidden',
 };
 
-export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard ({
+export const FlippableFaceDownVoteCard = memo(({
 	isRevealed,
 	revealedValue,
 	isExiting,
@@ -29,7 +29,7 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 	showFrontFaceWhileConcealed?: boolean;
 	/** While true, the table slot is hidden during the hand→table flight; used to replay face-down entrance when shown again. */
 	tableSlotSuppressedForFlight?: boolean;
-}) {
+}) => {
 	const reduced = Boolean(prefersReducedMotion);
 
 	const frontFaceRotationDegrees = isRevealed || showFrontFaceWhileConcealed ? 180 : 0;
@@ -106,3 +106,5 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 		</div>
 	);
 });
+
+FlippableFaceDownVoteCard.displayName = 'FlippableFaceDownVoteCard';

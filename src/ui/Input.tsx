@@ -13,7 +13,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 	alphanumeric?: boolean;
 }
 
-function labelTextClass (hasError: boolean): string {
+const labelTextClass = (hasError: boolean): string => {
 	if (hasError) {
 		return mergeTailwindClasses(
 			'text-sm font-medium leading-none pl-1',
@@ -25,14 +25,14 @@ function labelTextClass (hasError: boolean): string {
 		'text-sm font-medium leading-none pl-1',
 		'text-foreground'
 	);
-}
+};
 
-function inputBorderClass (hasError: boolean): string {
+const inputBorderClass = (hasError: boolean): string => {
 	if (hasError) {
 		return 'border-destructive focus-visible:ring-destructive';
 	}
 	return '';
-}
+};
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
 	(

@@ -19,9 +19,9 @@ import {
 	VOTE_CARD_FLIGHT_DURATION_MS
 } from '@/utils/voteFlightGeometry';
 
-import { FlippableFaceDownVoteCard } from './FlippableFaceDownVoteCard';
+import { PeerVoteCard } from './PeerVoteCard';
+import { SelfVoteCard } from './SelfVoteCard';
 import { TableDeckGatherOverlay } from './TableDeckGatherOverlay';
-import { VotingCard } from './VotingCard';
 
 export interface VotingTableProps {
 	selfDisplayName: string;
@@ -39,7 +39,7 @@ type GatherDeckState = {
 	phase: GatherDeckPhase;
 };
 
-export const VotingTable = memo(function VotingTable (
+export const VotingTable = memo((
 	{
 		selfDisplayName,
 		participants = [],
@@ -51,7 +51,7 @@ export const VotingTable = memo(function VotingTable (
 		selfCardRef,
 		className = '',
 	}: VotingTableProps
-) {
+) => {
 	const prefersReducedMotion = usePrefersReducedMotion();
 	const tableColumnsContainerRef = useRef<HTMLDivElement>(null);
 	const selfParticipantLabelRef = useRef<HTMLSpanElement>(null);
@@ -380,16 +380,6 @@ export const VotingTable = memo(function VotingTable (
 											&& !participant.hasVoted;
 
 										if (isRevealed && !hadTablePresence) {
-											const revealedOnlyCard = (
-												<div className="w-full animate-table-card-in">
-													<VotingCard
-														value={revealedValue}
-														disabled
-														tabIndex={-1}
-														className="w-full shadow-md"
-													/>
-												</div>
-											);
 											const selfCardWrapperClassName = mergeTailwindClasses(
 												'w-full',
 												hideSelfTableCard ? 'pointer-events-none opacity-0' : ''
@@ -405,13 +395,20 @@ export const VotingTable = memo(function VotingTable (
 														{
 															isSelf
 																? (
-																	<div ref={selfSlotRef} className="w-full">
-																		<div ref={selfCardRef} className={selfCardWrapperClassName}>
-																			{revealedOnlyCard}
-																		</div>
-																	</div>
+																	<SelfVoteCard
+																		mode="table-revealed-static"
+																		revealedValue={revealedValue}
+																		slotRef={selfSlotRef}
+																		cardRef={selfCardRef}
+																		wrapperClassName={selfCardWrapperClassName}
+																	/>
 																)
-																: revealedOnlyCard
+																: (
+																	<PeerVoteCard
+																		mode="table-revealed-static"
+																		revealedValue={revealedValue}
+																	/>
+																)
 														}
 													</div>
 													<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
@@ -425,17 +422,6 @@ export const VotingTable = memo(function VotingTable (
 											? selfVoteDisplay
 											: revealedValue;
 
-										const tableFlipCard = (
-											<FlippableFaceDownVoteCard
-												isRevealed={isRevealed}
-												revealedValue={flipRevealedValue}
-												isExiting={isExiting}
-												prefersReducedMotion={prefersReducedMotion}
-												frontFaceSelected={isSelf && Boolean(selfVoteDisplay)}
-												showFrontFaceWhileConcealed={isSelf && Boolean(selfVoteDisplay)}
-												tableSlotSuppressedForFlight={isSelf && hideSelfTableCard}
-											/>
-										);
 										const selfFlipCardWrapperClassName = mergeTailwindClasses(
 											'w-full',
 											hideSelfTableCard ? 'pointer-events-none opacity-0' : ''
@@ -451,13 +437,28 @@ export const VotingTable = memo(function VotingTable (
 													{
 														isSelf
 															? (
-																<div ref={selfSlotRef} className="w-full">
-																	<div ref={selfCardRef} className={selfFlipCardWrapperClassName}>
-																		{tableFlipCard}
-																	</div>
-																</div>
+																<SelfVoteCard
+																	mode="table-flip"
+																	isRevealed={isRevealed}
+																	revealedValue={flipRevealedValue}
+																	isExiting={isExiting}
+																	prefersReducedMotion={prefersReducedMotion}
+																	selfVoteDisplay={selfVoteDisplay}
+																	hideSelfTableCard={hideSelfTableCard}
+																	slotRef={selfSlotRef}
+																	cardRef={selfCardRef}
+																	wrapperClassName={selfFlipCardWrapperClassName}
+																/>
 															)
-															: tableFlipCard
+															: (
+																<PeerVoteCard
+																	mode="table-flip"
+																	isRevealed={isRevealed}
+																	revealedValue={flipRevealedValue}
+																	isExiting={isExiting}
+																	prefersReducedMotion={prefersReducedMotion}
+																/>
+															)
 													}
 												</div>
 												{
@@ -490,3 +491,5 @@ export const VotingTable = memo(function VotingTable (
 		</div>
 	);
 });
+
+VotingTable.displayName = 'VotingTable';
