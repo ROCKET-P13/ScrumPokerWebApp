@@ -1,7 +1,9 @@
+import { useNavigate, useParams } from '@tanstack/react-router';
 import _ from 'lodash';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
+import { Routes } from '@/Common/Routes';
 import { VoteCardFlightDirection } from '@/Common/VoteCardFlightDirection';
 import { ParticipantList } from '@/Components/Participants/ParticipantList';
 import { VoteCardFlightOverlay } from '@/Components/Voting/VoteCardFlightOverlay';
@@ -9,6 +11,7 @@ import { VotingHand } from '@/Components/Voting/VotingHand';
 import { VotingTable } from '@/Components/Voting/VotingTable';
 import { usePrefersReducedMotion } from '@/hooks/animations';
 import { useSendVote } from '@/hooks/useSendVote';
+import { joinRoomStore } from '@/stores/joinRoomStore';
 import { roomStore } from '@/stores/roomStore';
 
 type VoteFlightBoundingRects = {
@@ -25,7 +28,19 @@ type FlightPayload = {
 
 type ActiveFlight = FlightPayload & { flightOverlayInstanceId: number };
 
+const roomCodesEqualCaseInsensitive = (sessionRoomCode: string | null, urlRoomCode: string): boolean => {
+	if (sessionRoomCode == null || urlRoomCode === '') {
+		return false;
+	}
+
+	return sessionRoomCode.toUpperCase() === urlRoomCode.toUpperCase();
+};
+
 export const RoomPage = () => {
+	const navigate = useNavigate();
+	const routeParams = useParams({ strict: false });
+	const urlRoomCode = _.chain(routeParams).get('roomCode', '').trim().value();
+
 	const session = roomStore((storeSnapshot) => storeSnapshot.session);
 	const room = roomStore((storeSnapshot) => storeSnapshot.room);
 	const { mutateAsync: sendVote } = useSendVote();
@@ -47,6 +62,36 @@ export const RoomPage = () => {
 	const prevSelfHadVoteRef = useRef<boolean | null>(null);
 
 	const prefersReducedMotionFromSystem = usePrefersReducedMotion();
+
+	const [roomPersistHydrated, setRoomPersistHydrated] = useState(() => roomStore.persist.hasHydrated());
+
+	useEffect(() => {
+		if (roomStore.persist.hasHydrated()) {
+			return;
+		}
+
+		return roomStore.persist.onFinishHydration(() => {
+			setRoomPersistHydrated(true);
+		});
+	}, []);
+
+	const sessionMatchesUrlRoom = useMemo(
+		() => !!session.displayName && roomCodesEqualCaseInsensitive(session.roomCode, urlRoomCode),
+		[session.displayName, session.roomCode, urlRoomCode]
+	);
+
+	useLayoutEffect(() => {
+		if (!roomPersistHydrated || urlRoomCode === '') {
+			return;
+		}
+
+		if (sessionMatchesUrlRoom) {
+			return;
+		}
+
+		joinRoomStore.getState().updateJoinData({ roomCode: urlRoomCode });
+		navigate({ to: Routes.JOIN_ROOM, replace: true });
+	}, [roomPersistHydrated, urlRoomCode, sessionMatchesUrlRoom, navigate]);
 
 	useEffect(() => {
 		if (!session.displayName) {
@@ -332,7 +377,15 @@ export const RoomPage = () => {
 		]
 	);
 
-	if (!session.roomCode || !session.displayName) {
+	if (!roomPersistHydrated) {
+		return (
+			<div className="mx-auto flex min-h-svh max-w-4xl flex-col justify-center px-4 py-8">
+				<p className="text-center text-sm text-muted-foreground">Loading…</p>
+			</div>
+		);
+	}
+
+	if (!sessionMatchesUrlRoom) {
 		return null;
 	}
 
@@ -368,7 +421,7 @@ export const RoomPage = () => {
 					/>
 
 					<VotingTable
-						selfDisplayName={session.displayName}
+						selfDisplayName={session.displayName || ''}
 						participants={_.filter(room.participants, 'isPlayer')}
 						isRevealed={room.isRevealed}
 						selfVoteDisplay={selfVoteDisplay}
