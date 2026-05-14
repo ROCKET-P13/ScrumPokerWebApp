@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 
+import { GatherDeckPhase } from '@/Common/GatherDeckPhase';
 import { VotingCardSpectrumFlight } from '@/Common/VotingCardSpectrumFlight';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
@@ -27,6 +28,7 @@ export type SelfVoteCardProps =
 		slotRef: React.RefObject<HTMLDivElement | null>;
 		cardRef: React.RefObject<HTMLDivElement | null>;
 		wrapperClassName: string;
+		gatherDeckPhase?: GatherDeckPhase | null;
 	}
 	| {
 		mode: 'table-revealed-static';
@@ -100,6 +102,7 @@ export const SelfVoteCard = forwardRef<HTMLButtonElement, SelfVoteCardProps>(
 						frontFaceSelected={Boolean(props.selfVoteDisplay)}
 						showFrontFaceWhileConcealed={Boolean(props.selfVoteDisplay)}
 						tableSlotSuppressedForFlight={props.hideSelfTableCard}
+						gatherDeckPhase={props.gatherDeckPhase ?? null}
 					/>
 				</div>
 			</div>

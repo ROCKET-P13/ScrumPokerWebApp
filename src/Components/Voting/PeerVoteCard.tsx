@@ -1,5 +1,7 @@
 import { memo } from 'react';
 
+import { GatherDeckPhase } from '@/Common/GatherDeckPhase';
+
 import { FlippableFaceDownVoteCard } from './FlippableFaceDownVoteCard';
 import { VotingCard } from './VotingCard';
 
@@ -10,6 +12,7 @@ export type PeerVoteCardProps =
 		revealedValue: string;
 		isExiting: boolean;
 		prefersReducedMotion: boolean | null;
+		gatherDeckPhase?: GatherDeckPhase | null;
 	}
 	| {
 		mode: 'table-revealed-static';
@@ -39,6 +42,7 @@ export const PeerVoteCard = memo((props: PeerVoteCardProps) => {
 			frontFaceSelected={false}
 			showFrontFaceWhileConcealed={false}
 			tableSlotSuppressedForFlight={false}
+			gatherDeckPhase={props.gatherDeckPhase ?? null}
 		/>
 	);
 });

@@ -57,6 +57,8 @@ const revertAndClearColumnTransforms = (
  * FLIP translation for flex-reordered table columns (replaces Framer `layout="position"`).
  * When `hideSelfTableCardDuringFlight` toggles alone (vote flight overlay), only the rect snapshot
  * is refreshed so peer columns are not inverted then tweened — that produced visible lateral wobble.
+ * When `suspendFlipTransform` is true, skip delta tweens (snapshot only) so reveal→reset→gather
+ * does not apply compensating translates on the real table columns.
  */
 export const useFlipColumnLayout = (
 	containerRef: RefObject<HTMLElement | null>,
@@ -64,9 +66,11 @@ export const useFlipColumnLayout = (
 		layoutEpoch: string;
 		reducedMotion: boolean;
 		hideSelfTableCardDuringFlight: boolean;
+		/** When true: clear transforms and refresh rects only (no FLIP delta tweens). */
+		suspendFlipTransform?: boolean;
 	}
 ): void => {
-	const { layoutEpoch, reducedMotion, hideSelfTableCardDuringFlight } = options;
+	const { layoutEpoch, reducedMotion, hideSelfTableCardDuringFlight, suspendFlipTransform = false } = options;
 	const previousRectsByKeyRef = useRef<Map<string, DOMRect>>(new Map());
 	const activeByKeyRef = useRef<Map<string, JSAnimation>>(new Map());
 	const previousLayoutEpochRef = useRef(layoutEpoch);
@@ -81,6 +85,15 @@ export const useFlipColumnLayout = (
 
 		const epochChanged = previousLayoutEpochRef.current !== layoutEpoch;
 		const hideSelfCardChanged = previousHideSelfTableCardRef.current !== hideSelfTableCardDuringFlight;
+
+		if (suspendFlipTransform) {
+			revertAndClearColumnTransforms(activeByKeyRef, containerElement);
+			previousRectsByKeyRef.current = collectColumnRectSnapshot(containerElement);
+			previousLayoutEpochRef.current = layoutEpoch;
+			previousHideSelfTableCardRef.current = hideSelfTableCardDuringFlight;
+
+			return;
+		}
 
 		previousLayoutEpochRef.current = layoutEpoch;
 		previousHideSelfTableCardRef.current = hideSelfTableCardDuringFlight;
@@ -155,5 +168,5 @@ export const useFlipColumnLayout = (
 		}
 
 		previousRectsByKeyRef.current = nextSnapshot;
-	}, [containerRef, layoutEpoch, reducedMotion, hideSelfTableCardDuringFlight]);
+	}, [containerRef, layoutEpoch, reducedMotion, hideSelfTableCardDuringFlight, suspendFlipTransform]);
 };

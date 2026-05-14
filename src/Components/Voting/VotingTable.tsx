@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { GatherDeckPhase } from '@/Common/GatherDeckPhase';
 import { useAnimeOpacity, useFlipColumnLayout, usePrefersReducedMotion } from '@/hooks/animations';
@@ -21,7 +21,7 @@ import {
 
 import { PeerVoteCard } from './PeerVoteCard';
 import { SelfVoteCard } from './SelfVoteCard';
-import { TableDeckGatherOverlay } from './TableDeckGatherOverlay';
+import { GatherDeckAnimatedColumn, GATHER_DECK_COLUMN_PITCH_PX } from './TableDeckGatherOverlay';
 
 export interface VotingTableProps {
 	selfDisplayName: string;
@@ -72,6 +72,17 @@ export const VotingTable = memo((
 	const revealedRoundParticipantsRef = useRef<Participant[]>([]);
 	const prevIsRevealedRef = useRef(isRevealed);
 	const [gatherDeck, setGatherDeck] = useState<GatherDeckState | null>(null);
+	const prevGatherDeckRef = useRef<GatherDeckState | null>(null);
+
+	useLayoutEffect(() => {
+		const wasGatherDeck = prevGatherDeckRef.current;
+
+		prevGatherDeckRef.current = gatherDeck;
+
+		if (wasGatherDeck != null && gatherDeck == null) {
+			voteArrivalStore.getState().endGatherDeck();
+		}
+	}, [gatherDeck]);
 
 	const hasAnyOtherParticipantVoted = otherParticipants.some((participant) => participant.hasVoted);
 
@@ -183,6 +194,10 @@ export const VotingTable = memo((
 	const selfHasVisibleTableActivity = Boolean(selfVoteDisplay !== '' || hideSelfTableCard);
 
 	const orderByDisplayNameRecord = useVoteArrivalStore((state) => state.orderByDisplayName);
+	const gatherSnapshotParticipants = useVoteArrivalStore((state) => state.gatherSnapshotParticipants);
+	const gatherFrozenVoteOrderByDisplayName = useVoteArrivalStore(
+		(state) => state.gatherFrozenVoteOrderByDisplayName
+	);
 
 	const voteArrivalOrderByDisplayName = useMemo(
 		() => new Map(Object.entries(orderByDisplayNameRecord)),
@@ -212,6 +227,33 @@ export const VotingTable = memo((
 	]);
 
 	const participantDisplayNamesShownOnTable = useMemo(() => {
+		if (gatherDeck != null && gatherSnapshotParticipants != null) {
+			const names = new Set<string>();
+
+			for (const snapshotParticipant of gatherSnapshotParticipants) {
+				if (snapshotParticipant.hasVoted) {
+					names.add(snapshotParticipant.displayName);
+				}
+			}
+
+			for (const exitingParticipantDisplayName of exitingForLayout) {
+				names.add(exitingParticipantDisplayName);
+			}
+
+			const selfInSnapshot = gatherSnapshotParticipants.find(
+				(participant) => participant.displayName === selfDisplayName
+			);
+			const selfHadTableActivityInSnapshot = Boolean(
+				selfInSnapshot?.hasVoted || (selfInSnapshot?.vote && selfInSnapshot.vote !== '')
+			);
+
+			if (!isRevealed && selfHadTableActivityInSnapshot) {
+				names.add(selfDisplayName);
+			}
+
+			return names;
+		}
+
 		const names = new Set<string>();
 
 		for (const otherParticipant of otherParticipants) {
@@ -230,6 +272,8 @@ export const VotingTable = memo((
 
 		return names;
 	}, [
+		gatherDeck,
+		gatherSnapshotParticipants,
 		otherParticipants,
 		exitingForLayout,
 		isRevealed,
@@ -242,25 +286,84 @@ export const VotingTable = memo((
 		voteArrivalOrderByDisplayName
 	);
 
+	const sortedForTable = useMemo(() => {
+		if (
+			gatherDeck != null
+			&& gatherSnapshotParticipants != null
+			&& gatherSnapshotParticipants.length > 0
+		) {
+			return sortParticipantsByVoteArrival(
+				gatherSnapshotParticipants,
+				new Map(Object.entries(gatherFrozenVoteOrderByDisplayName ?? {}))
+			);
+		}
+
+		return tableRowParticipantsReveal;
+	}, [
+		gatherDeck,
+		gatherSnapshotParticipants,
+		gatherFrozenVoteOrderByDisplayName,
+		tableRowParticipantsReveal,
+	]);
+
+	const gatherColumnLayoutMeta = useMemo(() => {
+		if (gatherDeck == null) {
+			return null;
+		}
+
+		const visibleNames: string[] = [];
+
+		for (const participant of sortedForTable) {
+			if (!isRevealed && !participantDisplayNamesShownOnTable.has(participant.displayName)) {
+				continue;
+			}
+
+			visibleNames.push(participant.displayName);
+		}
+
+		const n = visibleNames.length;
+		const middle = n > 0 ? (n - 1) / 2 : 0;
+		const indexByName = new Map(visibleNames.map((name, index) => [name, index]));
+
+		return { n, middle, indexByName };
+	}, [gatherDeck, sortedForTable, isRevealed, participantDisplayNamesShownOnTable]);
+
 	const tableColumnLayoutEpoch = useMemo(
 		() => JSON.stringify({
-			participantOrderKeys: tableRowParticipantsReveal.map((participant) => participant.displayName),
+			participantOrderKeys: sortedForTable.map((participant) => participant.displayName),
 			shownKeysSorted: [...participantDisplayNamesShownOnTable].sort(),
 			isRevealed,
 			exitingKeysSorted: [...exitingForLayout].sort(),
 		}),
 		[
-			tableRowParticipantsReveal,
+			sortedForTable,
 			participantDisplayNamesShownOnTable,
 			isRevealed,
 			exitingForLayout,
 		]
 	);
 
+	/** First paint after admin reset: `gatherDeck` is still null but layout epoch already flipped — without this, FLIP column tweens run and cards jump before gather. */
+	const resetRevealedToClearedConcealedEdge = prefersReducedMotion !== true
+		&& prevIsRevealedRef.current === true
+		&& isRevealed === false
+		&& participantsEveryVoteSignalCleared(participants)
+		&& participantsSomeHaveVoteSignal(revealedRoundParticipantsRef.current);
+
+	const suspendFlipTransformForGather = gatherDeck != null
+		|| gatherSnapshotParticipants != null
+		|| resetRevealedToClearedConcealedEdge;
+
+	/** Prevents `FlippableFaceDownVoteCard` from flipping to face-down before `gatherDeckPhase` is `FLIP` (one-frame `isRevealed` false + `gatherPhase` null). */
+	const tableFlipIsRevealedForCard = isRevealed
+		|| resetRevealedToClearedConcealedEdge
+		|| (gatherSnapshotParticipants != null && gatherDeck == null);
+
 	useFlipColumnLayout(tableColumnsContainerRef, {
 		layoutEpoch: tableColumnLayoutEpoch,
 		reducedMotion: prefersReducedMotion === true,
 		hideSelfTableCardDuringFlight: hideSelfTableCard,
+		suspendFlipTransform: suspendFlipTransformForGather,
 	});
 
 	useAnimeOpacity(selfParticipantLabelRef, hideSelfTableParticipantLabel ? 0 : 1, {
@@ -281,7 +384,7 @@ export const VotingTable = memo((
 		}
 	}, [isRevealed, participants]);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		const snapshotWhenRevealedWithVotes = revealedRoundParticipantsRef.current;
 		const previousIsRevealed = prevIsRevealedRef.current;
 
@@ -327,10 +430,12 @@ export const VotingTable = memo((
 		}
 
 		return advanceAfter(TABLE_DECK_FADE_DURATION_MS, () => {
-			voteArrivalStore.getState().endGatherDeck();
 			setGatherDeck(null);
 		});
 	}, [gatherDeck, prefersReducedMotion]);
+
+	const gatherPhase = gatherDeck?.phase ?? null;
+	const reducedMotionGather = prefersReducedMotion === true;
 
 	return (
 		<div
@@ -345,148 +450,150 @@ export const VotingTable = memo((
 				Table
 			</p>
 			<div className="relative">
-				{
-					gatherDeck
-						? (
-							<div className="relative min-h-48 sm:min-h-52">
-								<TableDeckGatherOverlay
-									phase={gatherDeck.phase}
-									selfDisplayName={selfDisplayName}
-									prefersReducedMotion={prefersReducedMotion}
-								/>
-							</div>
-						)
-						: (
-							<div
-								ref={tableColumnsContainerRef}
-								className="flex min-h-48 flex-wrap items-end justify-center gap-4 sm:min-h-52 sm:gap-5"
-							>
-								{
-									tableRowParticipantsReveal.map((participant) => {
-										const isSelf = participant.displayName === selfDisplayName;
+				<div
+					ref={tableColumnsContainerRef}
+					className="flex min-h-48 flex-wrap items-end justify-center gap-4 sm:min-h-52 sm:gap-5"
+				>
+					{
+						sortedForTable.map((participant) => {
+							const isSelf = participant.displayName === selfDisplayName;
 
-										if (!isRevealed && !participantDisplayNamesShownOnTable.has(participant.displayName)) {
-											return null;
+							if (!isRevealed && !participantDisplayNamesShownOnTable.has(participant.displayName)) {
+								return null;
+							}
+
+							const revealedValue = participant.vote && participant.vote !== ''
+								? participant.vote
+								: '—';
+
+							const hadTablePresence = participant.hasVoted
+								|| exitingForLayout.has(participant.displayName);
+
+							const isExiting = exitingForLayout.has(participant.displayName)
+								&& !participant.hasVoted;
+
+							const gatherIndex = gatherColumnLayoutMeta?.indexByName.get(participant.displayName);
+
+							const wrapColumn = (inner: ReactNode) => (
+								<GatherDeckAnimatedColumn
+									key={participant.displayName}
+									phase={gatherPhase}
+									reduced={reducedMotionGather}
+									zIndex={gatherDeck != null ? 10 + (gatherIndex ?? 0) : undefined}
+									towardCenterPx={
+										gatherDeck != null && gatherColumnLayoutMeta != null && gatherIndex != null
+											? (gatherColumnLayoutMeta.middle - gatherIndex) * GATHER_DECK_COLUMN_PITCH_PX
+											: 0
+									}
+									tableFlipColumnKey={participant.displayName}
+								>
+									{inner}
+								</GatherDeckAnimatedColumn>
+							);
+
+							if (isRevealed && !hadTablePresence) {
+								const selfCardWrapperClassName = mergeTailwindClasses(
+									'w-full',
+									hideSelfTableCard ? 'pointer-events-none opacity-0' : ''
+								);
+
+								return wrapColumn(
+									<>
+										<div className="flex min-h-42 w-24 items-end justify-center sm:min-h-46 sm:w-28">
+											{
+												isSelf
+													? (
+														<SelfVoteCard
+															mode="table-revealed-static"
+															revealedValue={revealedValue}
+															slotRef={selfSlotRef}
+															cardRef={selfCardRef}
+															wrapperClassName={selfCardWrapperClassName}
+														/>
+													)
+													: (
+														<PeerVoteCard
+															mode="table-revealed-static"
+															revealedValue={revealedValue}
+														/>
+													)
+											}
+										</div>
+										<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
+											{participant.displayName}
+										</span>
+									</>
+								);
+							}
+
+							const flipRevealedValue = isSelf && selfVoteDisplay !== ''
+								? selfVoteDisplay
+								: revealedValue;
+
+							const selfFlipCardWrapperClassName = mergeTailwindClasses(
+								'w-full',
+								hideSelfTableCard ? 'pointer-events-none opacity-0' : ''
+							);
+
+							return wrapColumn(
+								<>
+									<div className="flex min-h-42 w-24 items-end justify-center sm:min-h-46 sm:w-28">
+										{
+											isSelf
+												? (
+													<SelfVoteCard
+														mode="table-flip"
+														isRevealed={tableFlipIsRevealedForCard}
+														revealedValue={flipRevealedValue}
+														isExiting={isExiting}
+														prefersReducedMotion={prefersReducedMotion}
+														selfVoteDisplay={selfVoteDisplay}
+														hideSelfTableCard={hideSelfTableCard}
+														slotRef={selfSlotRef}
+														cardRef={selfCardRef}
+														wrapperClassName={selfFlipCardWrapperClassName}
+														gatherDeckPhase={gatherPhase}
+													/>
+												)
+												: (
+													<PeerVoteCard
+														mode="table-flip"
+														isRevealed={tableFlipIsRevealedForCard}
+														revealedValue={flipRevealedValue}
+														isExiting={isExiting}
+														prefersReducedMotion={prefersReducedMotion}
+														gatherDeckPhase={gatherPhase}
+													/>
+												)
 										}
-
-										const revealedValue = participant.vote && participant.vote !== ''
-											? participant.vote
-											: '—';
-
-										const hadTablePresence = participant.hasVoted
-											|| exitingForLayout.has(participant.displayName);
-
-										const isExiting = exitingForLayout.has(participant.displayName)
-											&& !participant.hasVoted;
-
-										if (isRevealed && !hadTablePresence) {
-											const selfCardWrapperClassName = mergeTailwindClasses(
-												'w-full',
-												hideSelfTableCard ? 'pointer-events-none opacity-0' : ''
-											);
-
-											return (
-												<div
-													key={participant.displayName}
-													className="flex flex-col items-center gap-2"
-													data-table-flip-column={participant.displayName}
-												>
-													<div className="flex min-h-42 w-24 items-end justify-center sm:min-h-46 sm:w-28">
-														{
-															isSelf
-																? (
-																	<SelfVoteCard
-																		mode="table-revealed-static"
-																		revealedValue={revealedValue}
-																		slotRef={selfSlotRef}
-																		cardRef={selfCardRef}
-																		wrapperClassName={selfCardWrapperClassName}
-																	/>
-																)
-																: (
-																	<PeerVoteCard
-																		mode="table-revealed-static"
-																		revealedValue={revealedValue}
-																	/>
-																)
-														}
-													</div>
-													<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
-														{participant.displayName}
-													</span>
-												</div>
-											);
-										}
-
-										const flipRevealedValue = isSelf && selfVoteDisplay !== ''
-											? selfVoteDisplay
-											: revealedValue;
-
-										const selfFlipCardWrapperClassName = mergeTailwindClasses(
-											'w-full',
-											hideSelfTableCard ? 'pointer-events-none opacity-0' : ''
-										);
-
-										return (
-											<div
-												key={participant.displayName}
-												className="flex flex-col items-center gap-2"
-												data-table-flip-column={participant.displayName}
-											>
-												<div className="flex min-h-42 w-24 items-end justify-center sm:min-h-46 sm:w-28">
-													{
-														isSelf
-															? (
-																<SelfVoteCard
-																	mode="table-flip"
-																	isRevealed={isRevealed}
-																	revealedValue={flipRevealedValue}
-																	isExiting={isExiting}
-																	prefersReducedMotion={prefersReducedMotion}
-																	selfVoteDisplay={selfVoteDisplay}
-																	hideSelfTableCard={hideSelfTableCard}
-																	slotRef={selfSlotRef}
-																	cardRef={selfCardRef}
-																	wrapperClassName={selfFlipCardWrapperClassName}
-																/>
-															)
-															: (
-																<PeerVoteCard
-																	mode="table-flip"
-																	isRevealed={isRevealed}
-																	revealedValue={flipRevealedValue}
-																	isExiting={isExiting}
-																	prefersReducedMotion={prefersReducedMotion}
-																/>
-															)
+									</div>
+									{
+										isSelf
+											? (
+												<span
+													ref={selfParticipantLabelRef}
+													className={
+														mergeTailwindClasses(
+															'max-w-28 truncate text-center text-xs text-muted-foreground',
+															selfVoteDisplay === '' ? 'invisible' : ''
+														)
 													}
-												</div>
-												{
-													isSelf
-														? (
-															selfVoteDisplay !== '' && (
-																<span
-																	ref={selfParticipantLabelRef}
-																	className="max-w-28 truncate text-center text-xs text-muted-foreground"
-																	aria-hidden={hideSelfTableParticipantLabel}
-																>
-																	{selfDisplayName}
-																</span>
-															)
-														)
-														: (
-															<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
-																{participant.displayName}
-															</span>
-														)
-												}
-											</div>
-										);
-									})
-								}
-							</div>
-						)
-				}
+													aria-hidden={hideSelfTableParticipantLabel}
+												>
+													{selfDisplayName}
+												</span>
+											)
+											: (
+												<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
+													{participant.displayName}
+												</span>
+											)
+									}
+								</>
+							);
+						})
+					}
+				</div>
 			</div>
 		</div>
 	);
