@@ -84,5 +84,5 @@ export const useCard3DRotateY = (
 			animationRef.current?.revert();
 			animationRef.current = null;
 		};
-	}, [elementRef, reducedMotion, targetDegrees]); // eslint-disable-line react-hooks/exhaustive-deps -- onSettled via ref
+	}, [elementRef, reducedMotion, targetDegrees, onSettled]);
 };

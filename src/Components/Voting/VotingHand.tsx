@@ -3,7 +3,7 @@ import { memo, useState } from 'react';
 import { DefaultVoteOptions } from '@/Common/DefaultVoteOptions';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
-import { VotingCard } from './VotingCard';
+import { SelfVoteCard } from './SelfVoteCard';
 
 interface VotingHandProps {
 	currentVote: string;
@@ -20,7 +20,7 @@ interface VotingHandProps {
 	className?: string;
 };
 
-export const VotingHand = memo(function VotingHand (
+export const VotingHand = memo((
 	{
 		currentVote,
 		disabled,
@@ -32,7 +32,7 @@ export const VotingHand = memo(function VotingHand (
 		suppressHandLiftTransition = false,
 		className = '',
 	}: VotingHandProps
-) {
+) => {
 	const [hoverSuppressedIndex, setHoverSuppressedIndex] = useState<number | null>(null);
 
 	return (
@@ -41,7 +41,7 @@ export const VotingHand = memo(function VotingHand (
 				mergeTailwindClasses(
 					`pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center
 					bg-linear-to-t from-background from-50% to-transparent
-					pb-[calc(1.25rem+env(safe-area-inset-bottom,0))] pt-24`,
+					pb-[calc(1.25rem+env(safe-area-inset-bottom,0))] pt-12`,
 					className
 				)
 			}
@@ -105,10 +105,11 @@ export const VotingHand = memo(function VotingHand (
 											)
 										}
 									>
-										<VotingCard
+										<SelfVoteCard
 											ref={(cardButtonElement) => {
 												registerCardRef?.(value, cardButtonElement);
 											}}
+											mode="hand"
 											value={value}
 											isSelected={isSelected}
 											variant={isSelected ? 'ghost' : 'default'}
@@ -132,3 +133,5 @@ export const VotingHand = memo(function VotingHand (
 		</div>
 	);
 });
+
+VotingHand.displayName = 'VotingHand';

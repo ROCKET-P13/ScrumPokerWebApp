@@ -1,5 +1,6 @@
-import { memo, type CSSProperties, useEffect, useRef, useState } from 'react';
+import { memo, type CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { GatherDeckPhase } from '@/Common/GatherDeckPhase';
 import { useCard3DRotateY } from '@/hooks/animations';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
@@ -11,7 +12,7 @@ const facePlaneStyle: CSSProperties = {
 	WebkitBackfaceVisibility: 'hidden',
 };
 
-export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard ({
+export const FlippableFaceDownVoteCard = memo(({
 	isRevealed,
 	revealedValue,
 	isExiting,
@@ -19,6 +20,7 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 	frontFaceSelected = false,
 	showFrontFaceWhileConcealed = false,
 	tableSlotSuppressedForFlight = false,
+	gatherDeckPhase = null,
 }: {
 	isRevealed: boolean;
 	revealedValue: string;
@@ -27,12 +29,63 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 	frontFaceSelected?: boolean;
 	/** Your own vote: keep the value face-up while the round is still concealed. */
 	showFrontFaceWhileConcealed?: boolean;
-	/** While true, the table slot is hidden during the hand→table flight; used to replay face-down entrance when shown again. */
+	/** While true: the table slot is hidden during the hand→table flight; used to replay face-down entrance when shown again. */
 	tableSlotSuppressedForFlight?: boolean;
-}) {
+	/** In-place deck gather: flip (FLIP) then stack/fade on the same DOM as the table. */
+	gatherDeckPhase?: GatherDeckPhase | null;
+}) => {
 	const reduced = Boolean(prefersReducedMotion);
+	const gathering = gatherDeckPhase != null;
 
-	const frontFaceRotationDegrees = isRevealed || showFrontFaceWhileConcealed ? 180 : 0;
+	const [suppressFaceDownEnterAfterGather, setSuppressFaceDownEnterAfterGather] = useState(false);
+	const prevGatherDeckPhaseRef = useRef(gatherDeckPhase);
+
+	useLayoutEffect(() => {
+		const previousGatherDeckPhase = prevGatherDeckPhaseRef.current;
+
+		if (isRevealed) {
+			setSuppressFaceDownEnterAfterGather(false);
+		} else if (gatherDeckPhase != null) {
+			setSuppressFaceDownEnterAfterGather(false);
+		} else if (previousGatherDeckPhase != null) {
+			setSuppressFaceDownEnterAfterGather(true);
+		}
+
+		prevGatherDeckPhaseRef.current = gatherDeckPhase;
+	}, [gatherDeckPhase, isRevealed]);
+
+	const [gatherFlipFaceUp, setGatherFlipFaceUp] = useState(true);
+
+	useEffect(() => {
+		if (!gathering) {
+			return;
+		}
+
+		if (gatherDeckPhase !== GatherDeckPhase.FLIP || reduced) {
+			setGatherFlipFaceUp(true);
+
+			return;
+		}
+
+		setGatherFlipFaceUp(true);
+		const frameId = requestAnimationFrame(() => {
+			setGatherFlipFaceUp(false);
+		});
+
+		return () => {
+			cancelAnimationFrame(frameId);
+		};
+	}, [gatherDeckPhase, gathering, reduced]);
+
+	const effectiveIsRevealed = gathering
+		? gatherDeckPhase === GatherDeckPhase.FLIP && gatherFlipFaceUp
+		: isRevealed;
+
+	const effectiveShowFrontWhileConcealed = gathering
+		? gatherDeckPhase === GatherDeckPhase.FLIP && gatherFlipFaceUp && showFrontFaceWhileConcealed
+		: showFrontFaceWhileConcealed;
+
+	const frontFaceRotationDegrees = effectiveIsRevealed || effectiveShowFrontWhileConcealed ? 180 : 0;
 
 	const [frontFaceValue, setFrontFaceValue] = useState(revealedValue);
 	const [faceDownPlaneMountKey, setFaceDownPlaneMountKey] = useState(0);
@@ -51,21 +104,29 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 	}, [tableSlotSuppressedForFlight]);
 
 	useEffect(() => {
-		if (isRevealed || showFrontFaceWhileConcealed) {
+		if (effectiveIsRevealed || effectiveShowFrontWhileConcealed) {
 			setFrontFaceValue(revealedValue);
 		}
-	}, [isRevealed, revealedValue, showFrontFaceWhileConcealed]);
+	}, [effectiveIsRevealed, effectiveShowFrontWhileConcealed, revealedValue]);
 
-	const handleFlipAnimationComplete = () => {
-		if (!isRevealed && !showFrontFaceWhileConcealed) {
+	const handleFlipAnimationComplete = useCallback(() => {
+		if (!effectiveIsRevealed && !effectiveShowFrontWhileConcealed) {
 			setFrontFaceValue(revealedValue);
 		}
-	};
+	}, [effectiveIsRevealed, effectiveShowFrontWhileConcealed, revealedValue]);
 
 	useCard3DRotateY(flipRootRef, frontFaceRotationDegrees, {
 		reducedMotion: reduced,
 		onSettled: handleFlipAnimationComplete,
 	});
+
+	let faceDownMotionClassName = 'animate-table-face-down-in';
+
+	if (isExiting) {
+		faceDownMotionClassName = 'animate-table-face-down-out';
+	} else if (gathering || suppressFaceDownEnterAfterGather) {
+		faceDownMotionClassName = '';
+	}
 
 	return (
 		<div className="w-full perspective-distant">
@@ -83,9 +144,7 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 						className={
 							mergeTailwindClasses(
 								'aspect-auto h-full min-h-0 w-full max-w-none sm:w-full',
-								isExiting
-									? 'animate-table-face-down-out'
-									: 'animate-table-face-down-in'
+								faceDownMotionClassName
 							)
 						}
 					/>
@@ -106,3 +165,5 @@ export const FlippableFaceDownVoteCard = memo(function FlippableFaceDownVoteCard
 		</div>
 	);
 });
+
+FlippableFaceDownVoteCard.displayName = 'FlippableFaceDownVoteCard';
