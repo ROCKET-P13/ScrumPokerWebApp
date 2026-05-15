@@ -379,7 +379,7 @@ export const RoomPage = () => {
 
 	if (!roomPersistHydrated) {
 		return (
-			<div className="mx-auto flex min-h-svh max-w-4xl flex-col justify-center px-4 py-8">
+			<div className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-4 py-8">
 				<p className="text-center text-sm text-muted-foreground">Loading…</p>
 			</div>
 		);
@@ -391,29 +391,21 @@ export const RoomPage = () => {
 
 	if (!room) {
 		return (
-			<div className="mx-auto flex min-h-svh max-w-4xl flex-col justify-center px-4 py-8">
+			<div className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-4 py-8">
 				<p className="text-center text-sm text-muted-foreground">Loading room…</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className="relative">
+		<div className="relative flex min-h-0 flex-col">
 			<div
 				className={
 					session.isPlayer
-						? 'mx-auto max-w-5xl px-4 pb-80 pt-8'
-						: 'mx-auto max-w-5xl px-4 pb-8 pt-8'
+						? 'mx-20 px-4 pb-80 pt-8'
+						: 'mx-20 px-4 pb-8 pt-8'
 				}
 			>
-				<div className="mb-8 flex flex-col items-center justify-center text-center">
-					<h1 className="text-2xl font-semibold tracking-tight text-foreground">Scrum Poker</h1>
-					<div className="mt-1 flex flex-row gap-1 text-sm text-muted-foreground">
-						<p>Room</p>
-						<p className="font-mono font-medium text-foreground">{session.roomCode}</p>
-					</div>
-				</div>
-
 				<div className='flex flex-col gap-4'>
 					<ParticipantList
 						participants={room.participants}

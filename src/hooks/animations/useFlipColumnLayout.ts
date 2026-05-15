@@ -12,13 +12,20 @@ const readColumnKey = (element: Element): string | null => {
 	return element.getAttribute('data-table-flip-column');
 };
 
-const cloneRect = (rect: DOMRect): DOMRect => {
-	return new DOMRect(rect.x, rect.y, rect.width, rect.height);
+/** Positions relative to the table container so document scroll does not fake FLIP deltas between commits. */
+const rectRelativeToContainer = (elementRect: DOMRect, containerRect: DOMRect): DOMRect => {
+	return new DOMRect(
+		elementRect.left - containerRect.left,
+		elementRect.top - containerRect.top,
+		elementRect.width,
+		elementRect.height
+	);
 };
 
 const collectColumnRectSnapshot = (containerElement: HTMLElement): Map<string, DOMRect> => {
 	const snapshot = new Map<string, DOMRect>();
 	const columnElements = Array.from(containerElement.querySelectorAll(COLUMN_SELECTOR));
+	const containerRect = containerElement.getBoundingClientRect();
 
 	for (const columnElement of columnElements) {
 		const columnKey = readColumnKey(columnElement);
@@ -27,7 +34,10 @@ const collectColumnRectSnapshot = (containerElement: HTMLElement): Map<string, D
 			continue;
 		}
 
-		snapshot.set(columnKey, cloneRect(columnElement.getBoundingClientRect()));
+		snapshot.set(
+			columnKey,
+			rectRelativeToContainer(columnElement.getBoundingClientRect(), containerRect)
+		);
 	}
 
 	return snapshot;
@@ -55,6 +65,8 @@ const revertAndClearColumnTransforms = (
 
 /**
  * FLIP translation for flex-reordered table columns (replaces Framer `layout="position"`).
+ * Column rects are stored **relative to the container** so scrolling between layout commits does not
+ * produce bogus translate deltas (would read as vertical/horizontal jumps on reveal or reset).
  * When `hideSelfTableCardDuringFlight` toggles alone (vote flight overlay), only the rect snapshot
  * is refreshed so peer columns are not inverted then tweened — that produced visible lateral wobble.
  * When `suspendFlipTransform` is true, skip delta tweens (snapshot only) so reveal→reset→gather
@@ -129,6 +141,7 @@ export const useFlipColumnLayout = (
 
 		const previousRectsByKey = previousRectsByKeyRef.current;
 		const nextSnapshot = new Map<string, DOMRect>();
+		const containerRect = containerElement.getBoundingClientRect();
 
 		for (const columnElement of columnElements) {
 			const columnKey = readColumnKey(columnElement);
@@ -137,7 +150,10 @@ export const useFlipColumnLayout = (
 				continue;
 			}
 
-			const currentRect = cloneRect(columnElement.getBoundingClientRect());
+			const currentRect = rectRelativeToContainer(
+				columnElement.getBoundingClientRect(),
+				containerRect
+			);
 			const previousRect = previousRectsByKey.get(columnKey);
 
 			if (previousRect) {

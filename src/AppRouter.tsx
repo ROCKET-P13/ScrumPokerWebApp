@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createBrowserHistory, createRootRoute, createRoute, createRouter, Outlet, RouterProvider } from '@tanstack/react-router';
+import { AppBar, AppBarCenter, AppBarLeft, AppBarRight } from '@ui/AppBar';
 
 import { Routes } from '@/Common/Routes';
 import { JoinRoomPage } from '@/Components/Pages/JoinRoomPage';
@@ -7,12 +8,44 @@ import { LandingPage } from '@/Components/Pages/LandingPage';
 import { RoomPage } from '@/Components/Pages/RoomPage';
 import { StartRoomPage } from '@/Components/Pages/StartRoomPage';
 import { useAppBootstrap } from '@/hooks/useAppBootstrap';
+import { roomStore } from '@/stores/roomStore';
+import { CopyRoomLinkButton } from '@/ui/CopyRoomLinkButton';
+import { ThemeToggle } from '@/ui/ThemeToggle';
 
 const queryClient = new QueryClient();
 
 const Root = () => {
 	useAppBootstrap();
-	return <Outlet />;
+	const session = roomStore((storeSnapshot) => storeSnapshot.session);
+
+	return (
+		<div className="flex min-h-dvh flex-col">
+			<AppBar>
+				<AppBarLeft>
+					<h1 className="text-lg font-semibold tracking-tight text-foreground">Scrum Poker</h1>
+				</AppBarLeft>
+				<AppBarCenter>
+					<div className="flex flex-row items-center gap-1 text-sm text-muted-foreground">
+						<p>Room</p>
+						<p className="font-mono font-medium text-foreground">{session.roomCode}</p>
+						{
+							session.roomCode
+								? <CopyRoomLinkButton roomCode={session.roomCode} />
+								: null
+						}
+					</div>
+				</AppBarCenter>
+				<AppBarRight>
+					<ThemeToggle />
+				</AppBarRight>
+
+			</AppBar>
+
+			<main className="flex min-h-0 flex-1 flex-col">
+				<Outlet />
+			</main>
+		</div>
+	);
 };
 
 const rootRoute = createRootRoute({
