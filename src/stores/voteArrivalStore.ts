@@ -53,7 +53,7 @@ export const useVoteArrivalStore = create<VoteArrivalStore>((set, get) => ({
 		let orderByDisplayName = { ...previous.orderByDisplayName };
 		let nextSeq = previous.nextSeq;
 
-		const selfHasVisibleTableActivity = Boolean(selfVoteDisplay !== '' || hideSelfTableCard);
+		const selfHasVisibleTableActivity = !!(selfVoteDisplay !== '' || hideSelfTableCard);
 		const noCardsOnTable
 			= !hasAnyOtherParticipantVoted && exitingForLayout.size === 0 && !selfHasVisibleTableActivity;
 

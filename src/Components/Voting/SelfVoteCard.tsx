@@ -99,8 +99,8 @@ export const SelfVoteCard = forwardRef<HTMLButtonElement, SelfVoteCardProps>(
 						revealedValue={props.revealedValue}
 						isExiting={props.isExiting}
 						prefersReducedMotion={props.prefersReducedMotion}
-						frontFaceSelected={Boolean(props.selfVoteDisplay)}
-						showFrontFaceWhileConcealed={Boolean(props.selfVoteDisplay)}
+						frontFaceSelected={!!props.selfVoteDisplay}
+						showFrontFaceWhileConcealed={!!props.selfVoteDisplay}
 						tableSlotSuppressedForFlight={props.hideSelfTableCard}
 						gatherDeckPhase={props.gatherDeckPhase ?? null}
 					/>

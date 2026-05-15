@@ -65,7 +65,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 			onChange?.(e);
 		};
 
-		const hasError = Boolean(error);
+		const hasError = !!error;
 
 		return (
 			<div className="flex flex-col space-y-2">

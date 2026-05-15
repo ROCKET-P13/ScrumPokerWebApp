@@ -34,7 +34,7 @@ export const FlippableFaceDownVoteCard = memo(({
 	/** In-place deck gather: flip (FLIP) then stack/fade on the same DOM as the table. */
 	gatherDeckPhase?: GatherDeckPhase | null;
 }) => {
-	const reduced = Boolean(prefersReducedMotion);
+	const reduced = !!prefersReducedMotion;
 	const gathering = gatherDeckPhase != null;
 
 	const [suppressFaceDownEnterAfterGather, setSuppressFaceDownEnterAfterGather] = useState(false);

@@ -191,7 +191,7 @@ export const VotingTable = memo((
 		return mergedExitingParticipantDisplayNames;
 	}, [otherParticipants, exitingVoteNames]);
 
-	const selfHasVisibleTableActivity = Boolean(selfVoteDisplay !== '' || hideSelfTableCard);
+	const selfHasVisibleTableActivity = !!(selfVoteDisplay !== '' || hideSelfTableCard);
 
 	const orderByDisplayNameRecord = useVoteArrivalStore((state) => state.orderByDisplayName);
 	const gatherSnapshotParticipants = useVoteArrivalStore((state) => state.gatherSnapshotParticipants);
@@ -243,7 +243,7 @@ export const VotingTable = memo((
 			const selfInSnapshot = gatherSnapshotParticipants.find(
 				(participant) => participant.displayName === selfDisplayName
 			);
-			const selfHadTableActivityInSnapshot = Boolean(
+			const selfHadTableActivityInSnapshot = !!(
 				selfInSnapshot?.hasVoted || (selfInSnapshot?.vote && selfInSnapshot.vote !== '')
 			);
 

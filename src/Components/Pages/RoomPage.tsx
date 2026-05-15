@@ -107,7 +107,7 @@ export const RoomPage = () => {
 			return;
 		}
 
-		const hasVoteNow = Boolean(selfParticipant.hasVoted);
+		const hasVoteNow = !!selfParticipant.hasVoted;
 
 		if (prevSelfHadVoteRef.current === true && !hasVoteNow && currentVote !== '') {
 			setCurrentVote('');
@@ -454,7 +454,7 @@ export const RoomPage = () => {
 						sourceBoundingRect={activeFlightRecord.sourceBoundingRect}
 						destinationBoundingRect={activeFlightRecord.destinationBoundingRect}
 						direction={activeFlightRecord.direction}
-						reducedMotion={Boolean(prefersReducedMotionFromSystem)}
+						reducedMotion={!!prefersReducedMotionFromSystem}
 						onFlightComplete={handleVoteFlightOverlayAnimationComplete}
 					/>
 				))
