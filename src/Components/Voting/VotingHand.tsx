@@ -1,6 +1,7 @@
-import { memo, useState } from 'react';
+import { memo, useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import { DefaultVoteOptions } from '@/Common/DefaultVoteOptions';
+import { usePrefersReducedMotion } from '@/hooks/animations';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
 import { SelfVoteCard } from './SelfVoteCard';
@@ -34,6 +35,35 @@ export const VotingHand = memo((
 	}: VotingHandProps
 ) => {
 	const [hoverSuppressedIndex, setHoverSuppressedIndex] = useState<number | null>(null);
+	const prefersReducedMotion = usePrefersReducedMotion();
+	const handCardRefs = useRef(new Map<string, HTMLDivElement>());
+
+	const setHandCardWrapRef = useCallback((value: string, el: HTMLDivElement | null) => {
+		const map = handCardRefs.current;
+
+		if (el) {
+			map.set(value, el);
+			return;
+		}
+
+		map.delete(value);
+	}, []);
+
+	useLayoutEffect(() => {
+		if (!currentVote) {
+			return;
+		}
+
+		const wrap = handCardRefs.current.get(currentVote);
+
+		if (!wrap) {
+			return;
+		}
+
+		const behavior = prefersReducedMotion === true ? 'instant' : 'smooth';
+
+		wrap.scrollIntoView({ block: 'nearest', inline: 'center', behavior });
+	}, [currentVote, prefersReducedMotion]);
 
 	return (
 		<div
@@ -47,14 +77,19 @@ export const VotingHand = memo((
 			}
 		>
 			<div
-				className='pointer-events-auto mx-auto w-full max-w-5xl overflow-x-auto px-2 pb-2 scrollbar-hidden sm:px-4'
+				className={
+					mergeTailwindClasses(
+						'pointer-events-auto mx-auto w-full max-w-5xl overflow-x-auto overscroll-x-contain px-2 pb-2 sm:px-4 scrollbar-hidden',
+						'max-sm:snap-x max-sm:snap-proximity'
+					)
+				}
 				role="group"
 				aria-label="Planning poker values"
 			>
 				<div
 					className={
 						mergeTailwindClasses(
-							'flex min-h-48 items-end justify-center sm:min-h-56',
+							'flex min-h-48 items-end justify-start sm:min-h-56 sm:justify-center',
 							interactionLocked ? 'pointer-events-none' : ''
 						)
 					}
@@ -83,12 +118,13 @@ export const VotingHand = memo((
 							return (
 								<div
 									key={value}
+									ref={(el) => setHandCardWrapRef(value, el)}
 									onMouseLeave={() => {
 										setHoverSuppressedIndex((prev) => (prev === index ? null : prev));
 									}}
 									className={
 										mergeTailwindClasses(
-											'relative shrink-0 ease-out motion-reduce:transition-none',
+											'relative shrink-0 max-sm:snap-center ease-out motion-reduce:transition-none',
 											suppressHandLiftTransition
 												? 'transition-none'
 												: 'transition-transform duration-300',
@@ -121,7 +157,7 @@ export const VotingHand = memo((
 
 												onSelect(value);
 											}}
-											className="w-20 sm:w-26"
+											className="w-22 sm:w-26"
 										/>
 									</div>
 								</div>
