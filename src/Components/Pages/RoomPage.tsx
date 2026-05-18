@@ -402,8 +402,8 @@ export const RoomPage = () => {
 			<div
 				className={
 					session.isPlayer
-						? 'mx-20 px-4 pb-80 pt-8'
-						: 'mx-20 px-4 pb-8 pt-8'
+						? 'px-4 pb-80 pt-8'
+						: 'px-4 pb-8 pt-8'
 				}
 			>
 				<div className='flex flex-col gap-4'>
