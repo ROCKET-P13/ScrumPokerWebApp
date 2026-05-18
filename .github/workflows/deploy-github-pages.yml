@@ -27,10 +27,23 @@ jobs:
           node-version: '22'
           cache: npm
 
+      # Vite bakes import.meta.env.VITE_WS_URL into the bundle at build time.
+      # Set it under Settings → Secrets and variables → Actions (Variable or Secret named VITE_WS_URL).
+      # Must be a public wss:// URL to your real server (GitHub Pages does not host WebSockets).
       - name: Install and build
         env:
           GH_PAGES_BASE: ${{ format('/{0}/', github.event.repository.name) }}
+          SECRET_VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
+          VAR_VITE_WS_URL: ${{ vars.VITE_WS_URL }}
         run: |
+          if [ -n "${SECRET_VITE_WS_URL}" ]; then
+            export VITE_WS_URL="${SECRET_VITE_WS_URL}"
+          elif [ -n "${VAR_VITE_WS_URL}" ]; then
+            export VITE_WS_URL="${VAR_VITE_WS_URL}"
+          else
+            echo "::error::Set Actions secret or variable VITE_WS_URL (e.g. wss://your-api.example.com/ws). Repository Settings → Secrets and variables → Actions."
+            exit 1
+          fi
           npm ci
           npm run build
 

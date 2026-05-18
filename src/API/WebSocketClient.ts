@@ -20,9 +20,18 @@ export class WebSocketClient {
 
 	private reconnectTimeout: number | null = null;
 
-	#WS_URL = import.meta.env.VITE_WS_URL;
+	#WS_URL: string | undefined = import.meta.env.VITE_WS_URL;
 
 	connect () {
+		const wsUrl = this.#WS_URL;
+
+		if (wsUrl == null || wsUrl === '') {
+			console.error(
+				'VITE_WS_URL is missing. It must be set at build time (e.g. GitHub Actions variable/secret VITE_WS_URL).'
+			);
+			return;
+		}
+
 		if (
 			this.socket
       && (this.socket.readyState === WebSocket.OPEN
@@ -31,7 +40,7 @@ export class WebSocketClient {
 			return;
 		}
 
-		this.socket = new WebSocket(this.#WS_URL);
+		this.socket = new WebSocket(wsUrl);
 
 		this.socket.onopen = () => {
 			console.log('connected');
