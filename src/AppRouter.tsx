@@ -26,13 +26,16 @@ const Root = () => {
 				</AppBarLeft>
 				<AppBarCenter>
 					<div className="flex flex-row items-center gap-1 text-sm text-muted-foreground">
-						<p>Room</p>
-						<p className="font-mono font-medium text-foreground">{session.roomCode}</p>
 						{
 							session.roomCode
-								? <CopyRoomLinkButton roomCode={session.roomCode} />
-								: null
+								? <div>
+									<p>Room</p>
+									<p className="font-mono font-medium text-foreground">{session.roomCode}</p>
+									<CopyRoomLinkButton roomCode={session.roomCode} />
+								</div>
+								: <></>
 						}
+
 					</div>
 				</AppBarCenter>
 				<AppBarRight>
