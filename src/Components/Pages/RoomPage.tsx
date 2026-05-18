@@ -402,7 +402,7 @@ export const RoomPage = () => {
 			<div
 				className={
 					session.isPlayer
-						? 'px-4 pb-80 pt-8'
+						? 'px-4 pb-8 pt-8'
 						: 'px-4 pb-8 pt-8'
 				}
 			>
