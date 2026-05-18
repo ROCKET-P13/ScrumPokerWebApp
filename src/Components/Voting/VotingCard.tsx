@@ -1,8 +1,34 @@
-import { forwardRef } from 'react';
+import { forwardRef, useMemo } from 'react';
 
 import { VotingCardSpectrumFlight } from '@/Common/VotingCardSpectrumFlight';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
+type StandardVisualState = 'ghost' | 'selected' | 'default';
+
+const SpectrumToneClasses: Record<VotingCardSpectrumFlight, string> = {
+	[VotingCardSpectrumFlight.TO_SELECTED]: 'border-border bg-card text-card-foreground animate-voting-card-spectrum-to-selected',
+	[VotingCardSpectrumFlight.TO_DEFAULT]: 'border-primary bg-primary text-primary-foreground animate-voting-card-spectrum-to-default',
+};
+
+const StandardToneClasses: Record<StandardVisualState, string> = {
+	ghost: 'scale-[0.97] border-dashed border-muted-foreground/40 bg-muted/35 text-muted-foreground shadow-none',
+	selected: 'border-primary bg-primary text-primary-foreground',
+	default: 'border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground',
+};
+
+const SpectrumCornerToneClass = 'text-inherit opacity-90';
+
+const StandardCornerToneClasses: Record<StandardVisualState, string> = {
+	ghost: 'text-muted-foreground/90',
+	selected: 'text-primary-foreground/90',
+	default: 'text-muted-foreground group-hover:text-accent-foreground',
+};
+
+const CenterValueToneByContext = {
+	spectrum: 'text-inherit',
+	ghost: 'text-muted-foreground',
+	plain: '',
+} as const;
 export interface VotingCardProps extends Omit<
 	React.ButtonHTMLAttributes<HTMLButtonElement>,
 	'children'
@@ -35,40 +61,36 @@ export const VotingCard = forwardRef<HTMLButtonElement, VotingCardProps>(
 		const isInteractive = !disabled;
 		const isGhost = variant === 'ghost';
 		const spectrumMode = spectrumFlight != null;
-
-		let toneClass = '';
-		if (spectrumMode) {
-			if (spectrumFlight === VotingCardSpectrumFlight.TO_SELECTED) {
-				toneClass = `border-border bg-card text-card-foreground animate-voting-card-spectrum-to-selected`;
-			} else {
-				toneClass = `border-primary bg-primary text-primary-foreground animate-voting-card-spectrum-to-default`;
+		const standardVisualState = useMemo(() => {
+			if (isGhost) {
+				return 'ghost';
 			}
-		} else if (isGhost) {
-			toneClass = `scale-[0.97] border-dashed border-muted-foreground/40 bg-muted/35 text-muted-foreground
-				shadow-none`;
-		} else if (isSelected) {
-			toneClass = `border-primary bg-primary text-primary-foreground`;
-		} else {
-			toneClass = `border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground`;
-		}
+			if (isSelected) {
+				return 'selected';
+			}
+			return 'default';
+		}, [isGhost, isSelected]);
 
-		let cornerColorClass = '';
-		if (spectrumMode) {
-			cornerColorClass = 'text-inherit opacity-90';
-		} else if (isGhost) {
-			cornerColorClass = 'text-muted-foreground/90';
-		} else if (isSelected) {
-			cornerColorClass = 'text-primary-foreground/90';
-		} else {
-			cornerColorClass = 'text-muted-foreground group-hover:text-accent-foreground';
-		}
+		const toneClass = spectrumFlight != null
+			? SpectrumToneClasses[spectrumFlight]
+			: StandardToneClasses[standardVisualState];
 
-		let centerToneClass = '';
-		if (spectrumMode) {
-			centerToneClass = 'text-inherit';
-		} else if (isGhost) {
-			centerToneClass = 'text-muted-foreground';
-		}
+		const cornerColorClass = spectrumMode
+			? SpectrumCornerToneClass
+			: StandardCornerToneClasses[standardVisualState];
+
+		const toneContext = useMemo(() => {
+			if (spectrumMode) {
+				return 'spectrum';
+			}
+			if (isGhost) {
+				return 'ghost';
+			}
+			return 'plain';
+		}, [spectrumMode, isGhost]);
+
+		const centerToneClass
+			= CenterValueToneByContext[toneContext];
 
 		return (
 			<button
