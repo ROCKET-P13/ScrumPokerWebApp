@@ -88,9 +88,15 @@ const routeTree = rootRoute.addChildren([
 	roomRoute,
 ]);
 
+const routerBasepath =
+	import.meta.env.BASE_URL === '/'
+		? undefined
+		: import.meta.env.BASE_URL.replace(/\/$/, '');
+
 const router = createRouter({
 	history: createBrowserHistory(),
 	routeTree,
+	basepath: routerBasepath,
 	defaultPreload: 'intent',
 	defaultPreloadStaleTime: 0,
 	scrollRestoration: true,

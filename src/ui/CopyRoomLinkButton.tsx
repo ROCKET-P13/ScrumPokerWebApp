@@ -10,7 +10,8 @@ export const CopyRoomLinkButton = ({ roomCode }: { roomCode: string }) => {
 	const [tooltipDismissSignal, setTooltipDismissSignal] = useState(0);
 
 	const handleClick = () => {
-		const url = `${window.location.origin}${Routes.ROOM}/${encodeURIComponent(roomCode)}`;
+		const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+		const url = `${window.location.origin}${basePath}${Routes.ROOM}/${encodeURIComponent(roomCode)}`;
 
 		void navigator.clipboard
 			.writeText(url)
