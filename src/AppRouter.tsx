@@ -28,9 +28,11 @@ const Root = () => {
 					<div className="flex flex-row items-center gap-1 text-sm text-muted-foreground">
 						{
 							session.roomCode
-								? <div>
-									<p>Room</p>
-									<p className="font-mono font-medium text-foreground">{session.roomCode}</p>
+								? <div className='flex flex-row gap-2'>
+									<div className='flex flex-row gap-1'>
+										<p>Room</p>
+										<p className="font-mono font-medium text-foreground">{session.roomCode}</p>
+									</div>
 									<CopyRoomLinkButton roomCode={session.roomCode} />
 								</div>
 								: <></>
