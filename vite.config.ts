@@ -20,25 +20,42 @@ const productionBase = process.env.GH_PAGES_BASE
 	? normalizePublicBase(process.env.GH_PAGES_BASE)
 	: DEFAULT_GH_PAGES_BASE;
 
-export default defineConfig(({ mode }) => ({
-	base: mode === 'production' ? productionBase : '/',
-	plugins: [
-		react(),
-		tailwindcss(),
-	],
-	server: {
-		proxy: {
-			'/api': {
-				target: 'http://localhost:5046',
-				changeOrigin: true,
-				secure: false,
+export default defineConfig(({ mode }) => {
+	const resolvedBase = mode === 'production' ? productionBase : '/';
+
+	return {
+		base: resolvedBase,
+		plugins: [
+			react(),
+			tailwindcss(),
+			/**
+			 * `./vite.svg` is resolved relative to the *current* URL. Client-side routes like
+			 * `/room/…` would request `/room/vite.svg` (404). Use base-prefixed path instead.
+			 */
+			{
+				name: 'html-favicon-base',
+				transformIndexHtml (html) {
+					return html.replace(
+						'<link rel="icon" type="image/svg+xml" href="./vite.svg" />',
+						`<link rel="icon" type="image/svg+xml" href="${resolvedBase}vite.svg" />`
+					);
+				},
+			},
+		],
+		server: {
+			proxy: {
+				'/api': {
+					target: 'http://localhost:5046',
+					changeOrigin: true,
+					secure: false,
+				},
 			},
 		},
-	},
-	resolve: {
-		alias: {
-			'@': path.resolve(__dirname, './src'),
-			'@ui': path.resolve(__dirname, './src/ui'),
+		resolve: {
+			alias: {
+				'@': path.resolve(__dirname, './src'),
+				'@ui': path.resolve(__dirname, './src/ui'),
+			},
 		},
-	},
-}));
+	};
+});
