@@ -19,6 +19,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Required so secrets/vars attached only to the "github-pages" environment are visible here.
+    # (Repository-level Variables / Secrets work without this.)
+    environment: github-pages
     steps:
       - uses: actions/checkout@v4
 
@@ -27,21 +30,24 @@ jobs:
           node-version: '22'
           cache: npm
 
-      # Vite bakes import.meta.env.VITE_WS_URL into the bundle at build time.
-      # Set it under Settings → Secrets and variables → Actions (Variable or Secret named VITE_WS_URL).
-      # Must be a public wss:// URL to your real server (GitHub Pages does not host WebSockets).
+      # Vite bakes import.meta.env.VITE_WS_URL at build time. Use a wss:// URL to your server.
       - name: Install and build
         env:
           GH_PAGES_BASE: ${{ format('/{0}/', github.event.repository.name) }}
           SECRET_VITE_WS_URL: ${{ secrets.VITE_WS_URL }}
           VAR_VITE_WS_URL: ${{ vars.VITE_WS_URL }}
         run: |
-          if [ -n "${SECRET_VITE_WS_URL}" ]; then
+          set -euo pipefail
+          if [ -n "${SECRET_VITE_WS_URL:-}" ]; then
             export VITE_WS_URL="${SECRET_VITE_WS_URL}"
-          elif [ -n "${VAR_VITE_WS_URL}" ]; then
+            echo "::notice::Using secret VITE_WS_URL for the build."
+          elif [ -n "${VAR_VITE_WS_URL:-}" ]; then
             export VITE_WS_URL="${VAR_VITE_WS_URL}"
+            echo "::notice::Using variable VITE_WS_URL for the build."
           else
-            echo "::error::Set Actions secret or variable VITE_WS_URL (e.g. wss://your-api.example.com/ws). Repository Settings → Secrets and variables → Actions."
+            echo "::error::VITE_WS_URL not found. Add it as either:"
+            echo "::error::  - Repository secret or variable (Settings → Secrets and variables → Actions → Secrets / Variables), or"
+            echo "::error::  - Environment secret or variable on the 'github-pages' environment (this job now uses environment: github-pages)."
             exit 1
           fi
           npm ci
