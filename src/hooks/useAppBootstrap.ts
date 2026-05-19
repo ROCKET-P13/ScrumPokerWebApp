@@ -36,7 +36,7 @@ export const useAppBootstrap = () => {
 			return;
 		}
 
-		if (pathname == Routes.HOME && session.roomCode) {
+		if (pathname == Routes.HOME && roomCode) {
 			clearSession();
 		}
 
