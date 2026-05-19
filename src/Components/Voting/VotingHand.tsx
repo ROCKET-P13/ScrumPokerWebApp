@@ -70,7 +70,6 @@ export const VotingHand = memo((
 			className={
 				mergeTailwindClasses(
 					`pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center
-					bg-linear-to-t from-background from-25% to-transparent
 					pb-[calc(1.25rem+env(safe-area-inset-bottom,0))] pt-10`,
 					className
 				)
