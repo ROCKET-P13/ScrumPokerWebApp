@@ -22,10 +22,10 @@ const Root = () => {
 		<div className="flex min-h-dvh flex-col">
 			<AppBar>
 				<AppBarLeft>
-					<h1 className="text-lg font-semibold tracking-tight text-foreground">Scrum Poker</h1>
+					<h1 className="text-md font-semibold tracking-tight text-foreground mr-10">Scrum Poker</h1>
 				</AppBarLeft>
 				<AppBarCenter>
-					<div className="flex flex-row items-center gap-1 text-sm text-muted-foreground">
+					<div className="flex flex-row items-end gap-1 text-sm text-muted-foreground">
 						{
 							session.roomCode
 								? <div className='flex flex-row gap-2'>
@@ -88,10 +88,9 @@ const routeTree = rootRoute.addChildren([
 	roomRoute,
 ]);
 
-const routerBasepath =
-	import.meta.env.BASE_URL === '/'
-		? undefined
-		: import.meta.env.BASE_URL.replace(/\/$/, '');
+const routerBasepath = import.meta.env.BASE_URL === '/'
+	? undefined
+	: import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const router = createRouter({
 	history: createBrowserHistory(),
