@@ -1,4 +1,4 @@
-import { ReactNode, useState, useRef, useEffect, useCallback } from 'react';
+import { ReactNode, useState, useRef, useEffect, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
@@ -44,7 +44,7 @@ const TransformClasses = Object.freeze({
 	right: 'translate-x-0 -translate-y-1/2',
 });
 
-export const Tooltip = (
+export const Tooltip = memo((
 	{
 		content,
 		children,
@@ -189,4 +189,6 @@ export const Tooltip = (
 				)}
 		</>
 	);
-};
+});
+
+Tooltip.displayName = 'Tooltip';
