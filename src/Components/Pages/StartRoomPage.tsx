@@ -1,8 +1,10 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@ui/Button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@ui/Card';
+import { Icon } from '@ui/Icon';
 import { Input } from '@ui/Input';
 import { Switch } from '@ui/Switch';
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Routes } from '@/Common/Routes';
@@ -17,7 +19,7 @@ export const StartRoomPage = () => {
 	const setSession = roomStore((state) => state.setSession);
 	const setRoomState = roomStore((state) => state.setRoomState);
 
-	const { mutateAsync: createRoom } = useCreateRoom();
+	const { mutateAsync: createRoom, isPending: isCreatingRoom } = useCreateRoom();
 
 	const handleSubmit = async () => {
 		const res = await createRoom({
@@ -76,9 +78,20 @@ export const StartRoomPage = () => {
 						Back
 					</Button>
 					<Button
+						aria-busy={isCreatingRoom}
+						disabled={isCreatingRoom}
 						onClick={handleSubmit}
 					>
-						Create room
+						{
+							isCreatingRoom
+								? (
+									<>
+										<Icon as={Loader2} aria-hidden className='mr-2 animate-spin' />
+										Creating…
+									</>
+								)
+								: 'Create room'
+						}
 					</Button>
 				</CardFooter>
 			</Card>

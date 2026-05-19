@@ -1,7 +1,9 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@ui/Button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@ui/Card';
+import { Icon } from '@ui/Icon';
 import { Input } from '@ui/Input';
+import { Loader2 } from 'lucide-react';
 
 import { Routes } from '@/Common/Routes';
 import { useJoinRoom } from '@/hooks/useJoinRoom';
@@ -17,7 +19,7 @@ export const JoinRoomPage = () => {
 	const setSession = roomStore((state) => state.setSession);
 	const setRoomState = roomStore((state) => state.setRoomState);
 
-	const { mutateAsync: joinRoom } = useJoinRoom();
+	const { mutateAsync: joinRoom, isPending: isJoiningRoom } = useJoinRoom();
 
 	const handleSubmit = async () => {
 		const room = await joinRoom({
@@ -75,8 +77,20 @@ export const JoinRoomPage = () => {
 							Back
 					</Button>
 					<Button
+						aria-busy={isJoiningRoom}
+						disabled={isJoiningRoom}
 						onClick={handleSubmit}
-					>Join Room</Button>
+					>
+						{
+							isJoiningRoom
+								? (
+									<>
+										<Icon as={Loader2} aria-hidden className='mr-2 animate-spin' />
+										Joining…
+									</>
+								)
+								: 'Join Room'}
+					</Button>
 				</CardFooter>
 			</Card>
 		</div>

@@ -1,13 +1,34 @@
 import { Copy } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Routes } from '@/Common/Routes';
 import { Icon } from '@/ui/Icon';
-import { Tooltip } from '@/ui/Tooltip';
+import { Tooltip, TOOLTIP_EXIT_DURATION_MS } from '@/ui/Tooltip';
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
 
+/** How long the "Copied!" tooltip stays visible before it is forced closed. */
+const COPIED_TOOLTIP_MS = 300;
+/** Reset label after close animation completes (see `TOOLTIP_EXIT_DURATION_MS`). */
+const COPIED_RESET_AFTER_HIDE_MS = TOOLTIP_EXIT_DURATION_MS;
+
 export const CopyRoomLinkButton = ({ roomCode }: { roomCode: string }) => {
-	const [tooltipDismissSignal, setTooltipDismissSignal] = useState(0);
+	const [copied, setCopied] = useState(false);
+	const [tooltipCloseSignal, setTooltipCloseSignal] = useState(0);
+	const copiedTimersRef = useRef<{
+		hide: ReturnType<typeof setTimeout> | null;
+		resetLabel: ReturnType<typeof setTimeout> | null;
+	}>({ hide: null, resetLabel: null });
+
+	useEffect(() => () => {
+		const { hide, resetLabel } = copiedTimersRef.current;
+		if (hide) {
+			clearTimeout(hide);
+		}
+
+		if (resetLabel) {
+			clearTimeout(resetLabel);
+		}
+	}, []);
 
 	const handleClick = () => {
 		const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -16,7 +37,24 @@ export const CopyRoomLinkButton = ({ roomCode }: { roomCode: string }) => {
 		void navigator.clipboard
 			.writeText(url)
 			.then(() => {
-				setTooltipDismissSignal((previous) => previous + 1);
+				const timers = copiedTimersRef.current;
+				if (timers.hide) {
+					clearTimeout(timers.hide);
+				}
+
+				if (timers.resetLabel) {
+					clearTimeout(timers.resetLabel);
+				}
+
+				setCopied(true);
+				timers.hide = setTimeout(() => {
+					setTooltipCloseSignal((previous) => previous + 1);
+					timers.hide = null;
+				}, COPIED_TOOLTIP_MS);
+				timers.resetLabel = setTimeout(() => {
+					setCopied(false);
+					timers.resetLabel = null;
+				}, COPIED_TOOLTIP_MS + COPIED_RESET_AFTER_HIDE_MS);
 			})
 			.catch((error: unknown) => {
 				console.error('Failed to copy room link', error);
@@ -25,9 +63,10 @@ export const CopyRoomLinkButton = ({ roomCode }: { roomCode: string }) => {
 
 	return (
 		<Tooltip
-			content="Copy Room Link"
+			closeSignal={tooltipCloseSignal}
+			content={copied ? 'Copied!' : 'Copy Room Link'}
 			position="bottom"
-			dismissSignal={tooltipDismissSignal}
+			tone={copied ? 'primary' : 'default'}
 		>
 			<button
 				type="button"

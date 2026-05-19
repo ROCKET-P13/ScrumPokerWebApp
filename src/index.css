@@ -305,7 +305,6 @@
     opacity: 0;
   }
 }
-
 /* Flight overlay palette transition: duration/easing match voteFlightGeometry.ts */
 @keyframes voting-card-spectrum-to-selected {
   from {

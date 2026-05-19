@@ -2,6 +2,12 @@ import { ReactNode, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 import { mergeTailwindClasses } from '@/utils/mergeTailwindClasses';
+
+/** Must match `duration-[…ms]` on the bubble — portal stays mounted until this elapses after `hide()`. */
+export const TOOLTIP_EXIT_DURATION_MS = 240;
+
+type TooltipTone = 'default' | 'primary';
+
 type TooltipProps = {
 	content: string;
 	children: ReactNode;
@@ -9,8 +15,19 @@ type TooltipProps = {
 	delay?: number;
 	disabled?: boolean;
 	className?: string;
-	/** When this number increases, the tooltip is dismissed (e.g. after an action) even if the trigger stays hovered. */
-	dismissSignal?: number;
+	tone?: TooltipTone;
+	/** When this value increases, the tooltip hides immediately (e.g. after an action). */
+	closeSignal?: number;
+};
+
+const ToneSurfaceClasses : Record<TooltipTone, string> = {
+	default: 'bg-popover text-popover-foreground border-border',
+	primary: 'bg-primary text-primary-foreground border-primary',
+};
+
+const ToneArrowClasses : Record<TooltipTone, string> = {
+	default: 'bg-popover border-border',
+	primary: 'bg-primary border-primary',
 };
 
 const ArrowPositions = Object.freeze({
@@ -35,7 +52,8 @@ export const Tooltip = (
 		delay = 150,
 		disabled = false,
 		className = '',
-		dismissSignal = 0,
+		tone = 'default',
+		closeSignal = 0,
 	}: TooltipProps
 ) => {
 	const [visible, setVisible] = useState(false);
@@ -43,6 +61,7 @@ export const Tooltip = (
 	const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 	const triggerRef = useRef<HTMLDivElement | null>(null);
 	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const unmountAfterHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const hide = useCallback(() => {
 		if (timeoutRef.current) {
@@ -50,13 +69,26 @@ export const Tooltip = (
 			timeoutRef.current = null;
 		}
 
-		setVisible(false);
-		setTimeout(() => setMounted(false), delay);
-	}, [delay]);
+		if (unmountAfterHideTimeoutRef.current) {
+			clearTimeout(unmountAfterHideTimeoutRef.current);
+			unmountAfterHideTimeoutRef.current = null;
+		}
 
-	const show = () => {
+		setVisible(false);
+		unmountAfterHideTimeoutRef.current = setTimeout(() => {
+			setMounted(false);
+			unmountAfterHideTimeoutRef.current = null;
+		}, TOOLTIP_EXIT_DURATION_MS);
+	}, []);
+
+	const show = useCallback(() => {
 		if (disabled || !triggerRef.current) {
 			return;
+		}
+
+		if (unmountAfterHideTimeoutRef.current) {
+			clearTimeout(unmountAfterHideTimeoutRef.current);
+			unmountAfterHideTimeoutRef.current = null;
 		}
 
 		const rect = triggerRef.current.getBoundingClientRect();
@@ -83,21 +115,25 @@ export const Tooltip = (
 		setCoords(positions[position]);
 		setMounted(true);
 		timeoutRef.current = setTimeout(() => setVisible(true), delay);
-	};
+	}, [disabled, triggerRef, delay, position]);
 
 	useEffect(() => {
-		if (dismissSignal === 0) {
+		if (closeSignal === 0) {
 			return;
 		}
 
 		queueMicrotask(() => {
 			hide();
 		});
-	}, [dismissSignal, hide]);
+	}, [closeSignal, hide]);
 
 	useEffect(() => () => {
 		if (timeoutRef.current) {
 			clearTimeout(timeoutRef.current);
+		}
+
+		if (unmountAfterHideTimeoutRef.current) {
+			clearTimeout(unmountAfterHideTimeoutRef.current);
 		}
 	}, []);
 
@@ -120,20 +156,27 @@ export const Tooltip = (
 						role="tooltip"
 						className={
 							mergeTailwindClasses(
-								'z-50 absolute rounded-md border px-2 py-1 text-xs shadow-sm backdrop-blur-sm bg-popover/95 text-popover-foreground border-border',
+								'z-50 absolute rounded-md border px-2 py-1 text-xs shadow-sm',
+								'translate-z-0 transition-[opacity,transform]',
+								ToneSurfaceClasses[tone],
 								TransformClasses[position],
 								visible
-									? 'opacity-100 scale-100 transition duration-150 ease-out'
-									: 'opacity-0 scale-95 pointer-events-none transition duration-150 ease-in',
+									? 'opacity-100 scale-100 ease-out'
+									: 'pointer-events-none opacity-0 scale-[0.97] ease-[cubic-bezier(0.4,0,0.2,1)]',
 								className
 							)
 						}
-						style={{ top: `${coords.top}px`, left: `${coords.left}px` }}
+						style={{
+							top: `${coords.top}px`,
+							left: `${coords.left}px`,
+							transitionDuration: `${TOOLTIP_EXIT_DURATION_MS}ms`,
+						}}
 					>
 						<div
 							className={
 								mergeTailwindClasses(
-									'absolute h-2 w-2 bg-popover border border-border z-40',
+									'absolute h-2 w-2 border z-40',
+									ToneArrowClasses[tone],
 									ArrowPositions[position]
 								)
 							}
