@@ -27,7 +27,7 @@ export const PeerVoteCard = memo((props: PeerVoteCardProps) => {
 					value={props.revealedValue}
 					disabled
 					tabIndex={-1}
-					className="w-full shadow-md"
+					className="w-full"
 				/>
 			</div>
 		);

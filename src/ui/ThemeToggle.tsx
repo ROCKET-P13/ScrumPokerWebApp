@@ -25,7 +25,7 @@ export const ThemeToggle = () => {
 			<span
 				className={
 					mergeTailwindClasses(
-						'flex justify-center items-center h-4 w-4 rounded-full bg-background shadow transform ring-0 transition-transform',
+						'flex justify-center items-center h-4 w-4 rounded-full bg-background transform ring-0 transition-transform',
 						isChecked ? 'translate-x-5' : 'translate-x-0'
 					)
 				}>

@@ -158,7 +158,7 @@ export const FlippableFaceDownVoteCard = memo(({
 						isSelected={frontFaceSelected}
 						disabled
 						tabIndex={-1}
-						className="h-full w-full shadow-md"
+						className="h-full w-full"
 					/>
 				</div>
 			</div>

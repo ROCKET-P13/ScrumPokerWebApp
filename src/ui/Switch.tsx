@@ -56,7 +56,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(
 					<span
 						className={
 							mergeTailwindClasses(
-								'inline-block h-5 w-5 rounded-full bg-background shadow transform ring-0 transition-transform duration-200',
+								'inline-block h-5 w-5 rounded-full bg-background transform ring-0 transition-transform duration-200',
 								checked ? 'translate-x-5 bg-foreground' : 'translate-x-0'
 							)
 						}

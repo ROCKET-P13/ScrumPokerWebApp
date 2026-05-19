@@ -11,7 +11,7 @@ const SpectrumToneClasses: Record<VotingCardSpectrumFlight, string> = {
 };
 
 const StandardToneClasses: Record<StandardVisualState, string> = {
-	ghost: 'scale-[0.97] border-dashed border-muted-foreground/40 bg-muted/35 text-muted-foreground shadow-none',
+	ghost: 'scale-[0.97] border-dashed border-muted-foreground/40 bg-muted/35 text-muted-foreground',
 	selected: 'border-primary bg-primary text-primary-foreground',
 	default: 'border-border bg-card text-card-foreground hover:bg-accent hover:text-accent-foreground',
 };

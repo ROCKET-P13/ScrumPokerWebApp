@@ -156,7 +156,7 @@ export const Tooltip = memo((
 						role="tooltip"
 						className={
 							mergeTailwindClasses(
-								'z-50 absolute rounded-md border px-2 py-1 text-xs shadow-sm',
+								'z-50 absolute rounded-md border px-2 py-1 text-xs',
 								'translate-z-0 transition-[opacity,transform]',
 								ToneSurfaceClasses[tone],
 								TransformClasses[position],

@@ -69,7 +69,7 @@ export const SelfVoteCard = forwardRef<HTMLButtonElement, SelfVoteCardProps>(
 					spectrumFlight={props.spectrumFlight}
 					disabled
 					tabIndex={-1}
-					className={mergeTailwindClasses('h-full w-full shadow-lg', props.className || '')}
+					className={mergeTailwindClasses('h-full w-full', props.className || '')}
 				/>
 			);
 		}
@@ -83,7 +83,7 @@ export const SelfVoteCard = forwardRef<HTMLButtonElement, SelfVoteCardProps>(
 								value={props.revealedValue}
 								disabled
 								tabIndex={-1}
-								className="w-full shadow-md"
+								className="w-full"
 							/>
 						</div>
 					</div>
