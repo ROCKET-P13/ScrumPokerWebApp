@@ -8,7 +8,7 @@ export const FaceDownCard = memo(({ className = '' }: { className?: string }) =>
 			className={
 				mergeTailwindClasses(
 					`relative flex aspect-5/7 w-24 shrink-0 flex-col overflow-hidden rounded-(--radius)
-					border border-border bg-linear-to-br from-secondary via-card to-secondary shadow-md
+					border border-border
 					sm:w-28`,
 					className
 				)
