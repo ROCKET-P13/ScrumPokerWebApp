@@ -162,7 +162,7 @@ export const Tooltip = (
 								TransformClasses[position],
 								visible
 									? 'opacity-100 scale-100 ease-out'
-									: 'pointer-events-none opacity-0 scale-[0.97] ease-[cubic-bezier(0.4,0,0.2,1)]',
+									: 'pointer-events-none opacity-0 scale-[0.97] ease-in-out',
 								className
 							)
 						}
