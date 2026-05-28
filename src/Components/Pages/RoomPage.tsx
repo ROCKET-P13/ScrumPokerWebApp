@@ -398,11 +398,11 @@ export const RoomPage = () => {
 	}
 
 	return (
-		<div className="relative flex min-h-0 flex-col">
+		<div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto">
 			<div
 				className={
 					session.isPlayer
-						? 'px-4 pb-8 pt-8'
+						? 'px-4 pt-8 pb-(--voting-hand-reserved-height)'
 						: 'px-4 pb-8 pt-8'
 				}
 			>

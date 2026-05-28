@@ -359,6 +359,11 @@ export const VotingTable = memo((
 		|| resetRevealedToClearedConcealedEdge
 		|| (gatherSnapshotParticipants != null && gatherDeck == null);
 
+	const gatherPhase = gatherDeck?.phase ?? null;
+
+	const hideTableParticipantLabelsDuringResetGather = gatherPhase != null
+		|| resetRevealedToClearedConcealedEdge;
+
 	useFlipColumnLayout(tableColumnsContainerRef, {
 		layoutEpoch: tableColumnLayoutEpoch,
 		reducedMotion: prefersReducedMotion === true,
@@ -366,9 +371,13 @@ export const VotingTable = memo((
 		suspendFlipTransform: suspendFlipTransformForGather,
 	});
 
-	useAnimeOpacity(selfParticipantLabelRef, hideSelfTableParticipantLabel ? 0 : 1, {
-		reducedMotion: prefersReducedMotion === true,
-	});
+	useAnimeOpacity(
+		selfParticipantLabelRef,
+		(hideTableParticipantLabelsDuringResetGather || hideSelfTableParticipantLabel) ? 0 : 1,
+		{
+			reducedMotion: prefersReducedMotion === true,
+		}
+	);
 
 	useLayoutEffect(() => {
 		voteSnapEndPrevCommitRef.current = participantsHasVotedFlagMap(otherParticipants);
@@ -434,7 +443,6 @@ export const VotingTable = memo((
 		});
 	}, [gatherDeck, prefersReducedMotion]);
 
-	const gatherPhase = gatherDeck?.phase ?? null;
 	const reducedMotionGather = prefersReducedMotion === true;
 
 	return (
@@ -575,16 +583,28 @@ export const VotingTable = memo((
 													className={
 														mergeTailwindClasses(
 															'max-w-28 truncate text-center text-xs text-muted-foreground',
-															selfVoteDisplay === '' ? 'invisible' : ''
+															hideTableParticipantLabelsDuringResetGather || selfVoteDisplay === ''
+																? 'invisible'
+																: ''
 														)
 													}
-													aria-hidden={hideSelfTableParticipantLabel}
+													aria-hidden={
+														hideTableParticipantLabelsDuringResetGather
+														|| hideSelfTableParticipantLabel
+													}
 												>
 													{selfDisplayName}
 												</span>
 											)
 											: (
-												<span className="max-w-28 truncate text-center text-xs text-muted-foreground">
+												<span
+													className={
+														mergeTailwindClasses(
+															'max-w-28 truncate text-center text-xs text-muted-foreground',
+															hideTableParticipantLabelsDuringResetGather ? 'invisible' : ''
+														)
+													}
+												>
 													{participant.displayName}
 												</span>
 											)
